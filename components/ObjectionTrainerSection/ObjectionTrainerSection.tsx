@@ -27,9 +27,10 @@ const ObjectionTrainerSection: React.FC = () => {
 
 
   useEffect(() => {
+    // Alterado para buscar a variável de process.env
     if (!process.env.API_KEY) {
       setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE);
+      setError(API_KEY_ERROR_MESSAGE); // A mensagem em constants.ts já foi atualizada
     }
   }, []);
 
