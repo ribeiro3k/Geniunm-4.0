@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AppUser, UserActivityData, QuizAttemptRecord as AppQuizAttemptRecord, SimulationRecord as AppSimulationRecord, NavigationSection, OverallPerformanceStats, ParsedEvaluation } from '../../types';
@@ -90,7 +91,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
 
     let allQuizAttemptsQuery = supabase.from(TABLE_QUIZZES).select('id, usuario_id, titulo, criado_em, perguntas, resultado');
     let allSimRecordsQuery = supabase.from(TABLE_SIMULACOES).select('id, usuario_id, titulo, categoria, conteudo, nota, resumo_ia, criado_em');
-    let allUsersQuery = supabase.from(TABLE_USUARIOS).select('id, nome, email, tipo');
+    let allUsersQuery = supabase.from(TABLE_USUARIOS).select('id, nome, email, tipo'); // Removido avatarUrl
 
 
     const now = new Date();
