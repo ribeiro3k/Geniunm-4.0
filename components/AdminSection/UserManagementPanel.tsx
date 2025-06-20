@@ -1,15 +1,16 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SimpleUserCredentials, AppUser } from '../../types'; 
+import { AppUser, NewUserCredentials } from '../../types'; 
 import GlassCard from '../ui/GlassCard';
 import GlassButton from '../ui/GlassButton';
 import LoadingSpinner from '../ui/LoadingSpinner'; 
-import { LOCAL_STORAGE_CONSULTANT_USERS_KEY } from '../../constants';
+import { supabase } from '../../lib/supabaseClient';
+import { TABLE_USUARIOS, SUPABASE_ERROR_MESSAGE } from '../../constants';
 
 const UserManagementPanel: React.FC = () => {
   const [consultantUsers, setConsultantUsers] = useState<AppUser[]>([]); 
-  const [newConsultant, setNewConsultant] = useState<Omit<SimpleUserCredentials, 'id' | 'tipo'>>({
-    username: '', passwordPlainText: ''
+  const [newConsultant, setNewConsultant] = useState<Omit<NewUserCredentials, 'tipo'>>({
+    nome: '', email: '', senhaPlainText: ''
   });
   
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
@@ -20,19 +21,30 @@ const UserManagementPanel: React.FC = () => {
   
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingUsers, setIsFetchingUsers] = useState(true);
 
-  const loadConsultantUsers = useCallback(() => {
-    setIsLoading(true);
+  const loadConsultantUsers = useCallback(async () => {
+    if (!supabase) {
+      setMessage({ type: 'error', text: `Erro ao carregar usuários: ${SUPABASE_ERROR_MESSAGE}` });
+      setIsFetchingUsers(false);
+      return;
+    }
+    setIsFetchingUsers(true);
+    setMessage(null);
     try {
-      const storedUsersRaw = localStorage.getItem(LOCAL_STORAGE_CONSULTANT_USERS_KEY);
-      const users: AppUser[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
-      users.sort((a, b) => a.nome.localeCompare(b.nome));
-      setConsultantUsers(users);
-    } catch (error) {
-      setMessage({type: 'error', text: 'Erro ao carregar usuários do localStorage.'});
+      const { data, error } = await supabase
+        .from(TABLE_USUARIOS)
+        .select('id, nome, email, tipo, avatarUrl, criado_em') // Não buscamos a senha para listar
+        .eq('tipo', 'consultor')
+        .order('nome', { ascending: true });
+
+      if (error) throw error;
+      setConsultantUsers(data || []);
+    } catch (error: any) {
+      setMessage({type: 'error', text: `Erro ao carregar usuários do Supabase: ${error.message}`});
       setConsultantUsers([]);
     }
-    setIsLoading(false);
+    setIsFetchingUsers(false);
   }, []);
 
   useEffect(() => {
@@ -46,57 +58,79 @@ const UserManagementPanel: React.FC = () => {
     setMessage(null);
   };
 
-  const handleCreateConsultant = () => {
+  const handleCreateConsultant = async () => {
     setMessage(null);
-    if (!newConsultant.username.trim() || !newConsultant.passwordPlainText.trim()) {
+    if (!newConsultant.nome.trim() || !newConsultant.senhaPlainText.trim()) {
       setMessage({ type: 'error', text: 'Nome de usuário e senha são obrigatórios.' });
       return;
     }
-    if (newConsultant.passwordPlainText.length < 4) { // Simple password requirement for local
+    if (newConsultant.senhaPlainText.length < 4) { 
       setMessage({ type: 'error', text: 'A senha deve ter pelo menos 4 caracteres.' });
       return;
     }
-    if (consultantUsers.some(u => u.nome.toLowerCase() === newConsultant.username.trim().toLowerCase())) {
+    if (consultantUsers.some(u => u.nome.toLowerCase() === newConsultant.nome.trim().toLowerCase())) {
       setMessage({ type: 'error', text: 'Este nome de usuário já existe.' });
+      return;
+    }
+    if (newConsultant.email && consultantUsers.some(u => u.email?.toLowerCase() === newConsultant.email?.trim().toLowerCase())) {
+      setMessage({ type: 'error', text: 'Este email já está em uso.' });
+      return;
+    }
+     if (!supabase) {
+      setMessage({ type: 'error', text: `Erro ao criar usuário: ${SUPABASE_ERROR_MESSAGE}` });
       return;
     }
 
     setIsLoading(true);
     try {
-      const newUserToAdd: AppUser = {
-        id: `local_${newConsultant.username.trim().toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`,
-        nome: newConsultant.username.trim(),
-        password: newConsultant.passwordPlainText, // Storing password directly for local auth
-        tipo: 'consultor',
+      const userToInsert = {
+        nome: newConsultant.nome.trim(),
+        password: newConsultant.senhaPlainText, // ATENÇÃO: SENHA EM TEXTO PLANO!
+        email: newConsultant.email?.trim() || null,
+        tipo: 'consultor' as 'consultor',
       };
-      const updatedUsers = [...consultantUsers, newUserToAdd];
-      localStorage.setItem(LOCAL_STORAGE_CONSULTANT_USERS_KEY, JSON.stringify(updatedUsers));
-      setConsultantUsers(updatedUsers.sort((a, b) => a.nome.localeCompare(b.nome)));
-      setMessage({ type: 'success', text: `Consultor "${newUserToAdd.nome}" criado com sucesso!` });
-      setNewConsultant({ username: '', passwordPlainText: '' });
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Falha ao salvar usuário no localStorage.' });
+
+      const { error: insertError } = await supabase
+        .from(TABLE_USUARIOS)
+        .insert(userToInsert);
+
+      if (insertError) throw insertError;
+
+      setMessage({ type: 'success', text: `Consultor "${userToInsert.nome}" criado com sucesso no Supabase!` });
+      setNewConsultant({ nome: '', email: '', senhaPlainText: '' });
+      loadConsultantUsers(); // Recarregar a lista
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Falha ao salvar usuário no Supabase: ${error.message}. Verifique se o nome/email já existe ou se há problemas de permissão (RLS).` });
     }
     setIsLoading(false);
   };
   
-  const handleDeleteConsultant = (userId: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o consultor? Os dados de quiz e simulação associados a este ID local no Supabase (se houver) não serão afetados, mas o acesso local será removido.`)) {
+  const handleDeleteConsultant = async (userId: string, userName: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o consultor "${userName}"? Esta ação removerá o usuário do Supabase e não pode ser desfeita.`)) {
+      return;
+    }
+    if (!supabase) {
+      setMessage({ type: 'error', text: `Erro ao excluir usuário: ${SUPABASE_ERROR_MESSAGE}` });
       return;
     }
     setMessage(null);
     setIsLoading(true);
     try {
-      const updatedUsers = consultantUsers.filter(user => user.id !== userId);
-      localStorage.setItem(LOCAL_STORAGE_CONSULTANT_USERS_KEY, JSON.stringify(updatedUsers));
-      setConsultantUsers(updatedUsers);
-      setMessage({ type: 'success', text: `Consultor excluído com sucesso.` });
+      const { error: deleteError } = await supabase
+        .from(TABLE_USUARIOS)
+        .delete()
+        .eq('id', userId);
+
+      if (deleteError) throw deleteError;
+
+      setMessage({ type: 'success', text: `Consultor "${userName}" excluído com sucesso do Supabase.` });
+      loadConsultantUsers(); // Recarregar a lista
       if (editingUser?.id === userId) {
         setEditingUser(null);
         setNewPasswordForEdit('');
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Falha ao excluir usuário do localStorage.' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Falha ao excluir usuário do Supabase: ${error.message}` });
     }
     setIsLoading(false);
   };
@@ -112,7 +146,7 @@ const UserManagementPanel: React.FC = () => {
     setNewPasswordForEdit('');
   };
 
-  const handleConfirmEditPassword = () => {
+  const handleConfirmEditPassword = async () => {
     if (!editingUser || !newPasswordForEdit.trim()) {
         setMessage({ type: 'error', text: 'Nova senha não pode ser vazia.' });
         return;
@@ -121,18 +155,25 @@ const UserManagementPanel: React.FC = () => {
         setMessage({ type: 'error', text: 'A nova senha deve ter pelo menos 4 caracteres.' });
         return;
     }
+    if (!supabase) {
+      setMessage({ type: 'error', text: `Erro ao atualizar senha: ${SUPABASE_ERROR_MESSAGE}` });
+      return;
+    }
     setIsLoading(true);
     try {
-        const updatedUsers = consultantUsers.map(u => 
-            u.id === editingUser.id ? { ...u, password: newPasswordForEdit } : u
-        );
-        localStorage.setItem(LOCAL_STORAGE_CONSULTANT_USERS_KEY, JSON.stringify(updatedUsers));
-        setConsultantUsers(updatedUsers.sort((a, b) => a.nome.localeCompare(b.nome)));
-        setMessage({ type: 'success', text: `Senha do consultor "${editingUser.nome}" atualizada!` });
+        const { error: updateError } = await supabase
+          .from(TABLE_USUARIOS)
+          .update({ password: newPasswordForEdit }) // ATENÇÃO: SENHA EM TEXTO PLANO!
+          .eq('id', editingUser.id);
+
+        if (updateError) throw updateError;
+        
+        setMessage({ type: 'success', text: `Senha do consultor "${editingUser.nome}" atualizada no Supabase!` });
         setEditingUser(null);
         setNewPasswordForEdit('');
-    } catch (error) {
-        setMessage({ type: 'error', text: 'Falha ao atualizar senha no localStorage.' });
+        // Não precisa recarregar a lista aqui, pois a senha não é exibida.
+    } catch (error: any) {
+        setMessage({ type: 'error', text: `Falha ao atualizar senha no Supabase: ${error.message}` });
     }
     setIsLoading(false);
   };
@@ -141,8 +182,9 @@ const UserManagementPanel: React.FC = () => {
     <section id="user-management-panel" className="py-8">
       <h1 className="section-title">Gerenciamento de Usuários (Consultores)</h1>
       <p className="mb-4 text-sm text-[var(--color-text-light)]">
-        Crie e gerencie os usuários consultores da plataforma. As senhas são armazenadas localmente no navegador do administrador.
-        <strong className="text-[var(--error)]"> Atenção: Este método de armazenamento de senhas é inseguro e não recomendado para produção.</strong>
+        Crie e gerencie os usuários consultores da plataforma. Os dados são salvos no Supabase.
+        <br />
+        <strong className="text-[var(--error)]">ATENÇÃO: As senhas estão sendo salvas em texto plano no Supabase. Para produção, implemente hashing seguro URGENTEMENTE!</strong>
       </p>
 
       {message && (
@@ -155,19 +197,23 @@ const UserManagementPanel: React.FC = () => {
         <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Criar Novo Consultor</h2>
         <div className="space-y-4">
           <div>
-            <label htmlFor="new-consultant-username" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Nome do Consultor:</label>
-            <input type="text" id="new-consultant-username" name="username" value={newConsultant.username} onChange={handleNewConsultantChange} className="themed-input w-full" placeholder="Ex: Consultor Silva"/>
+            <label htmlFor="new-consultant-username" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Nome do Consultor (Login):</label>
+            <input type="text" id="new-consultant-username" name="nome" value={newConsultant.nome} onChange={handleNewConsultantChange} className="themed-input w-full" placeholder="Ex: Consultor Silva (será o login)"/>
+          </div>
+          <div>
+            <label htmlFor="new-consultant-email" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Email (Opcional):</label>
+            <input type="email" id="new-consultant-email" name="email" value={newConsultant.email || ''} onChange={handleNewConsultantChange} className="themed-input w-full" placeholder="consultor.silva@email.com"/>
           </div>
           <div>
             <label htmlFor="new-consultant-password" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Senha:</label>
             <div className="relative">
-              <input type={showPassword ? "text" : "password"} id="new-consultant-password" name="passwordPlainText" value={newConsultant.passwordPlainText} onChange={handleNewConsultantChange} className="themed-input w-full pr-10" placeholder="Mínimo 4 caracteres"/>
+              <input type={showPassword ? "text" : "password"} id="new-consultant-password" name="senhaPlainText" value={newConsultant.senhaPlainText} onChange={handleNewConsultantChange} className="themed-input w-full pr-10" placeholder="Mínimo 4 caracteres"/>
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3 flex items-center text-[var(--color-text-light)] hover:text-[var(--color-primary)]" aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}>
                 <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
           </div>
-          <GlassButton onClick={handleCreateConsultant} className="themed-button" disabled={isLoading}>
+          <GlassButton onClick={handleCreateConsultant} className="themed-button" disabled={isLoading || isFetchingUsers}>
             {isLoading ? <LoadingSpinner size="sm" /> : <><i className="fas fa-plus mr-2"></i>Criar Consultor</>}
           </GlassButton>
         </div>
@@ -197,45 +243,49 @@ const UserManagementPanel: React.FC = () => {
       )}
 
       <GlassCard className="p-4 md:p-6">
-        <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Lista de Consultores Cadastrados</h2>
-        {isLoading && consultantUsers.length === 0 && <LoadingSpinner text="Carregando consultores..." />}
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="min-w-full divide-y divide-[var(--color-border)] text-sm">
-            <thead className="bg-[var(--color-input-bg)]">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">Nome</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">ID Local</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {consultantUsers.map(user => (
-                <tr key={user.id} className="hover:bg-[var(--color-input-bg)] transition-colors">
-                  <td className="px-3 py-2 text-[var(--color-text-light)]">{user.nome}</td>
-                  <td className="px-3 py-2 text-[var(--color-text-light)] text-xs">{user.id}</td>
-                  <td className="px-3 py-2 text-[var(--color-text-light)] space-x-2">
-                    <GlassButton 
-                        onClick={() => handleStartEditPassword(user)} 
-                        className="!text-xs !py-1 !px-2 !bg-[rgba(var(--color-accent-rgb),0.15)] !text-[var(--color-accent)] hover:!bg-[rgba(var(--color-accent-rgb),0.25)] !border-transparent"
-                        disabled={isLoading || !!editingUser}
-                    >
-                      <i className="fas fa-key mr-1"></i>Alterar Senha
-                    </GlassButton>
-                    <GlassButton 
-                        onClick={() => handleDeleteConsultant(user.id)} 
-                        className="!text-xs !py-1 !px-2 !bg-[rgba(var(--error-rgb),0.1)] !text-[var(--error)] hover:!bg-[rgba(var(--error-rgb),0.2)] !border-transparent"
-                        disabled={isLoading || !!editingUser}
-                    >
-                      <i className="fas fa-trash-alt mr-1"></i>Excluir
-                    </GlassButton>
-                  </td>
+        <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Lista de Consultores Cadastrados (Supabase)</h2>
+        {isFetchingUsers && <LoadingSpinner text="Carregando consultores do Supabase..." />}
+        {!isFetchingUsers && consultantUsers.length === 0 && !message?.text.includes('Erro ao carregar usuários') && (
+            <p className="text-sm text-[var(--color-text-light)] italic text-center py-4">Nenhum consultor cadastrado no Supabase.</p>
+        )}
+        {!isFetchingUsers && consultantUsers.length > 0 && (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="min-w-full divide-y divide-[var(--color-border)] text-sm">
+              <thead className="bg-[var(--color-input-bg)]">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">Nome (Login)</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">Email</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">ID Supabase</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--color-text)]">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!isLoading && consultantUsers.length === 0 && (
-            <p className="text-sm text-[var(--color-text-light)] italic text-center py-4">Nenhum consultor cadastrado.</p>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {consultantUsers.map(user => (
+                  <tr key={user.id} className="hover:bg-[var(--color-input-bg)] transition-colors">
+                    <td className="px-3 py-2 text-[var(--color-text-light)]">{user.nome}</td>
+                    <td className="px-3 py-2 text-[var(--color-text-light)]">{user.email || 'N/A'}</td>
+                    <td className="px-3 py-2 text-[var(--color-text-light)] text-xs">{user.id}</td>
+                    <td className="px-3 py-2 text-[var(--color-text-light)] space-x-2">
+                      <GlassButton 
+                          onClick={() => handleStartEditPassword(user)} 
+                          className="!text-xs !py-1 !px-2 !bg-[rgba(var(--color-accent-rgb),0.15)] !text-[var(--color-accent)] hover:!bg-[rgba(var(--color-accent-rgb),0.25)] !border-transparent"
+                          disabled={isLoading || !!editingUser}
+                      >
+                        <i className="fas fa-key mr-1"></i>Alterar Senha
+                      </GlassButton>
+                      <GlassButton 
+                          onClick={() => handleDeleteConsultant(user.id, user.nome)} 
+                          className="!text-xs !py-1 !px-2 !bg-[rgba(var(--error-rgb),0.1)] !text-[var(--error)] hover:!bg-[rgba(var(--error-rgb),0.2)] !border-transparent"
+                          disabled={isLoading || !!editingUser}
+                      >
+                        <i className="fas fa-trash-alt mr-1"></i>Excluir
+                      </GlassButton>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </GlassCard>
     </section>
