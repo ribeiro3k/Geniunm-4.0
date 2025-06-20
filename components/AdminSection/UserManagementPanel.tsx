@@ -1,31 +1,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SimpleUserCredentials, QuizAttemptRecord, SimulationRecord, NewUserCredentials } from '../../types'; // Ensured SimpleUserCredentials is imported
+import { NewUserCredentials } from '../../types'; 
 import GlassCard from '../ui/GlassCard';
 import GlassButton from '../ui/GlassButton';
-import { 
-    LOCAL_STORAGE_SIMPLE_USERS_KEY, 
-    LOCAL_STORAGE_SIMPLE_USERS_CREDENTIALS_KEY, 
-    BASE_SIMPLE_USER_NAMES,
-    DEFAULT_SIMPLE_USER_PASSWORD,
-    LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY,
-    LOCAL_STORAGE_SIMULATION_RECORDS_KEY,
-    LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX,
-    TABLE_USUARIOS, // For potential future Supabase integration
-} from '../../constants';
-import { supabase } from '../../lib/supabaseClient'; // For potential future Supabase integration
+import LoadingSpinner from '../ui/LoadingSpinner'; 
+import { TABLE_USUARIOS } from '../../constants';
+import { supabase } from '../../lib/supabaseClient';
 
 interface UserManagementPanelProps {
   // onUserListChange: () => void; // This was for a simple user system, can be adapted for Supabase
 }
 
 const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListChange*/ }) => {
-  // For Supabase users (NewUserCredentials type)
-  const [supabaseUsers, setSupabaseUsers] = useState<any[]>([]); // Use a more specific type if available or define one
+  const [supabaseUsers, setSupabaseUsers] = useState<any[]>([]); 
   const [newSupabaseUser, setNewSupabaseUser] = useState<Omit<NewUserCredentials, 'senhaPlainText'> & { senhaPlainText: string }>({
     nome: '', email: '', senhaPlainText: '', tipo: 'consultor'
   });
-  const [editingSupabaseUser, setEditingSupabaseUser] = useState<any | null>(null);
+  // const [editingSupabaseUser, setEditingSupabaseUser] = useState<any | null>(null); // Placeholder for future edit functionality
   const [showSupabasePassword, setShowSupabasePassword] = useState(false);
   
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -71,38 +62,49 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListC
     }
 
     setIsLoading(true);
-    // 1. Create Supabase Auth user
+    
+    // 1. Create Supabase Auth user. The trigger 'on_auth_user_created' 
+    //    will then call 'handle_new_user' function to insert into 'public.usuarios'.
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: newSupabaseUser.email,
       password: newSupabaseUser.senhaPlainText,
+      options: {
+        data: { // These will be available in the trigger via NEW.raw_user_meta_data
+          nome_completo: newSupabaseUser.nome,
+          tipo_usuario: newSupabaseUser.tipo,
+          // avatar_url: 'URL_PADRAO_AQUI_SE_QUISER' // Opcional: pode adicionar um avatar padrão
+        }
+      }
     });
 
+    setIsLoading(false);
+
     if (authError || !authData.user) {
-      setMessage({ type: 'error', text: `Erro ao criar usuário na autenticação: ${authError?.message || 'Usuário não criado.'}` });
-      setIsLoading(false);
+        if (authError && authError.message.includes("User already registered")) {
+             setMessage({ type: 'error', text: `Este email (${newSupabaseUser.email}) já está registrado no sistema de autenticação. Se o usuário não aparece na lista abaixo, pode ter ocorrido uma falha na criação automática do perfil via trigger. Verifique os logs da função no Supabase.` });
+        } else {
+            setMessage({ type: 'error', text: `Erro ao registrar usuário na autenticação: ${authError?.message || 'Usuário não criado na autenticação.'}` });
+        }
       return;
     }
 
-    // 2. Insert into 'usuarios' table
-    const { error: dbError } = await supabase
-      .from(TABLE_USUARIOS)
-      .insert({
-        id: authData.user.id, // Use the ID from the auth user
-        nome: newSupabaseUser.nome,
-        email: newSupabaseUser.email,
-        tipo: newSupabaseUser.tipo,
-        // avatarUrl can be added later or set to a default
-      });
+    // Se chegou aqui, o signUp na auth.users foi bem-sucedido.
+    // O trigger 'on_auth_user_created' e a função 'handle_new_user' no Supabase
+    // devem ter cuidado da inserção na tabela 'public.usuarios'.
+    
+    // Não precisamos mais da verificação de perfil existente nem da inserção manual aqui.
+    // O sistema de autenticação do Supabase já lida com emails duplicados.
+    // O trigger deve inserir na tabela 'usuarios' ou falhar (e a falha pode ser vista nos logs do Supabase).
 
-    if (dbError) {
-      // Potentially roll back auth user creation or mark for cleanup
-      setMessage({ type: 'error', text: `Erro ao salvar dados do usuário no banco: ${dbError.message}. O usuário foi criado na autenticação, mas pode não estar funcional.` });
-    } else {
-      setMessage({ type: 'success', text: `Usuário "${newSupabaseUser.nome}" criado com sucesso!` });
-      setNewSupabaseUser({ nome: '', email: '', senhaPlainText: '', tipo: 'consultor' });
-      fetchSupabaseUsers(); // Refresh list
-    }
-    setIsLoading(false);
+    setMessage({ type: 'success', text: `Usuário "${newSupabaseUser.nome}" registrado. O perfil deve ter sido criado automaticamente. Verifique a lista.` });
+    setNewSupabaseUser({ nome: '', email: '', senhaPlainText: '', tipo: 'consultor' });
+    
+    // Aguardar um pouco para dar tempo ao trigger de executar antes de recarregar a lista.
+    // Idealmente, você não precisaria disso se o trigger for síncrono, mas para UI pode ser bom.
+    setTimeout(() => {
+        fetchSupabaseUsers(); // Atualiza a lista para mostrar o novo usuário
+    }, 1000); // Ajuste o tempo se necessário
+
   };
   
   const handleDeleteSupabaseUser = async (userId: string, userEmail: string | undefined) => {
@@ -110,26 +112,20 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListC
         setMessage({type: 'error', text: 'Supabase não configurado.'});
         return;
     }
-    if (!window.confirm(`Tem certeza que deseja excluir o usuário com email "${userEmail || userId}"? Esta ação é IRREVERSÍVEL e removerá o usuário da autenticação e do banco de dados.`)) {
+    // Lembrete: A exclusão completa (auth + tabela) idealmente é feita por uma função de backend.
+    // Esta função no cliente só remove da tabela 'usuarios'.
+    if (!window.confirm(`Tem certeza que deseja excluir o perfil do usuário "${userEmail || userId}" da tabela 'usuarios'? Esta ação NÃO removerá o usuário do sistema de autenticação do Supabase (tabela auth.users). Para remoção completa, use o painel do Supabase ou uma função de backend apropriada.`)) {
       return;
     }
     setMessage(null);
     setIsLoading(true);
 
-    // Note: Supabase Admin client needed to delete users by ID directly.
-    // This example assumes we might not have admin client setup in frontend.
-    // Deleting from 'usuarios' table first. Auth user deletion might require server-side logic or manual cleanup if not using admin client.
-    // For a full solution, an Edge Function callable by an admin would handle both.
-
     const { error: dbError } = await supabase.from(TABLE_USUARIOS).delete().eq('id', userId);
 
     if (dbError) {
-      setMessage({ type: 'error', text: `Erro ao excluir usuário do banco de dados: ${dbError.message}` });
+      setMessage({ type: 'error', text: `Erro ao excluir perfil da tabela 'usuarios': ${dbError.message}` });
     } else {
-      // Ideally, also delete from supabase.auth.users here if an admin client is available.
-      // For now, we'll assume it needs to be handled separately or this panel is for managing 'usuarios' table entries mainly.
-      // We can try to sign out the user if they happen to be the current user, though an admin typically wouldn't delete themselves.
-      setMessage({ type: 'success', text: `Usuário (registro em 'usuarios') com ID "${userId}" excluído. A remoção da autenticação pode precisar de ação manual ou via backend.` });
+      setMessage({ type: 'success', text: `Perfil do usuário com ID "${userId}" excluído da tabela 'usuarios'. Lembre-se de verificar o sistema de autenticação do Supabase.` });
       fetchSupabaseUsers(); // Refresh list
     }
     setIsLoading(false);
@@ -147,7 +143,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListC
       )}
 
       <GlassCard className="mb-8 p-4 md:p-6">
-        <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Criar Novo Usuário (Supabase)</h2>
+        <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Criar Novo Usuário</h2>
         <div className="space-y-4">
           <div>
             <label htmlFor="new-supabase-nome" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Nome Completo:</label>
@@ -174,13 +170,13 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListC
             </select>
           </div>
           <GlassButton onClick={handleCreateSupabaseUser} className="themed-button" disabled={isLoading}>
-            {isLoading ? <LoadingSpinner size="sm" /> : <><i className="fas fa-plus mr-2"></i>Criar Usuário Supabase</>}
+            {isLoading ? <LoadingSpinner size="sm" /> : <><i className="fas fa-plus mr-2"></i>Criar Usuário</>}
           </GlassButton>
         </div>
       </GlassCard>
 
       <GlassCard className="p-4 md:p-6">
-        <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Lista de Usuários (Supabase)</h2>
+        <h2 className="text-xl font-semibold mb-4 text-[var(--color-primary)]">Lista de Usuários Cadastrados</h2>
         {isLoading && supabaseUsers.length === 0 && <LoadingSpinner text="Carregando usuários..." />}
         <div className="overflow-x-auto custom-scrollbar">
           <table className="min-w-full divide-y divide-[var(--color-border)] text-sm">
@@ -205,10 +201,11 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListC
                         onClick={() => handleDeleteSupabaseUser(user.id, user.email)} 
                         className="!text-xs !py-1 !px-2 !bg-[rgba(var(--error-rgb),0.1)] !text-[var(--error)] hover:!bg-[rgba(var(--error-rgb),0.2)] !border-transparent"
                         disabled={isLoading}
+                        title="Excluir perfil do usuário da tabela 'usuarios'. A exclusão da autenticação é manual."
                     >
-                      <i className="fas fa-trash-alt mr-1"></i>Excluir
+                      <i className="fas fa-trash-alt mr-1"></i>Excluir Perfil
                     </GlassButton>
-                    {/* TODO: Add edit functionality, possibly password reset */}
+                    {/* TODO: Add edit functionality for nome/tipo. Password reset would typically be handled by Supabase Auth UI or admin functions. */}
                   </td>
                 </tr>
               ))}
@@ -216,7 +213,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ /*onUserListC
           </table>
         </div>
         {!isLoading && supabaseUsers.length === 0 && (
-            <p className="text-sm text-[var(--color-text-light)] italic text-center py-4">Nenhum usuário Supabase encontrado.</p>
+            <p className="text-sm text-[var(--color-text-light)] italic text-center py-4">Nenhum usuário cadastrado encontrado na tabela 'usuarios'.</p>
         )}
       </GlassCard>
     </section>
