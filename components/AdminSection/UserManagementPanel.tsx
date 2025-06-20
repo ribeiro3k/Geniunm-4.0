@@ -34,7 +34,7 @@ const UserManagementPanel: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from(TABLE_USUARIOS)
-        .select('id, nome, email, tipo, avatarUrl, criado_em') // Não buscamos a senha para listar
+        .select('id, nome, email, tipo, criado_em') // Removido avatarUrl da seleção
         .eq('tipo', 'consultor')
         .order('nome', { ascending: true });
 
@@ -88,6 +88,7 @@ const UserManagementPanel: React.FC = () => {
         password: newConsultant.senhaPlainText, // ATENÇÃO: SENHA EM TEXTO PLANO!
         email: newConsultant.email?.trim() || null,
         tipo: 'consultor' as 'consultor',
+        // avatarUrl não é mais incluído
       };
 
       const { error: insertError } = await supabase
