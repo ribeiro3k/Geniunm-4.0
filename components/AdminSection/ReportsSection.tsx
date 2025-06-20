@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AppUser, QuizAttemptRecord, SimulationRecord, ReportFilterConfig, ReportKPIs, ProcessedReportDataRow, ReportPeriod, ReportContentType, ParsedEvaluation, QuizQuestionType } from '../../types';
-import { DEFAULT_REPORT_FILTER_CONFIG, DEFAULT_REPORT_KPIS, TABLE_QUIZZES, TABLE_SIMULACOES, TABLE_USUARIOS } from '../../constants';
+import { DEFAULT_REPORT_FILTER_CONFIG, DEFAULT_REPORT_KPIS, TABLE_QUIZZES, TABLE_SIMULACOES, TABLE_USUARIOS, SUPABASE_ERROR_MESSAGE } from '../../constants';
 import GlassCard from '../ui/GlassCard';
 import GlassButton from '../ui/GlassButton';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -40,6 +39,7 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
   const [kpis, setKpis] = useState<ReportKPIs>(DEFAULT_REPORT_KPIS);
   const [reportData, setReportData] = useState<ProcessedReportDataRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [generatedReportTitle, setGeneratedReportTitle] = useState<string | null>(null);
   const [usersList, setUsersList] = useState<{ id: string; name: string }[]>([]);
   const chartRef = useRef<HTMLCanvasElement>(null);
@@ -47,10 +47,16 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-        if (!supabase) return;
+        if (!supabase) {
+            setFetchError(`Não é possível carregar usuários: ${SUPABASE_ERROR_MESSAGE}`);
+            setIsLoading(false);
+            return;
+        }
+        setFetchError(null);
         const { data, error } = await supabase.from(TABLE_USUARIOS).select('id, nome');
         if (error) {
             console.error("Error fetching users for reports:", error);
+            setFetchError(`Erro ao carregar lista de usuários: ${error.message}`);
             setUsersList([]);
         } else {
             const formattedUsers = (data || []).map(u => ({ id: u.id, name: u.nome }));
@@ -96,7 +102,6 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
             simulationAverageStars: {
                 ...(prev.simulationAverageStars || {}), // Preserve existing star states if any
                 enabled: checked, 
-                // Only change sub-stars if master is checked, otherwise preserve individual selections
                 acolhimento: checked ? true : prev.simulationAverageStars?.acolhimento,
                 clareza: checked ? true : prev.simulationAverageStars?.clareza,
                 argumentacao: checked ? true : prev.simulationAverageStars?.argumentacao,
@@ -110,7 +115,11 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
   };
   
   const processData = useCallback(async (): Promise<ProcessedReportDataRow[]> => {
-    if (!supabase) return [];
+    if (!supabase) {
+        setFetchError(`Não é possível processar dados: ${SUPABASE_ERROR_MESSAGE}`);
+        return [];
+    }
+    setFetchError(null);
     
     let quizQuery = supabase.from(TABLE_QUIZZES).select('*');
     let simQuery = supabase.from(TABLE_SIMULACOES).select('*');
@@ -130,116 +139,127 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
       simQuery = simQuery.eq('usuario_id', filters.collaboratorId);
     }
     
-    const [quizRes, simRes] = await Promise.all([quizQuery, simQuery]);
+    try {
+        const [quizRes, simRes] = await Promise.all([quizQuery, simQuery]);
 
-    const filteredQuizAttempts: QuizAttemptRecord[] = (quizRes.data || []) as QuizAttemptRecord[];
-    const filteredSimRecords: SimulationRecord[] = (simRes.data || []) as SimulationRecord[];
+        if (quizRes.error) throw new Error(`Erro ao buscar quizzes para relatório: ${quizRes.error.message}`);
+        if (simRes.error) throw new Error(`Erro ao buscar simulações para relatório: ${simRes.error.message}`);
 
-    const dataMap = new Map<string, ProcessedReportDataRow>();
-    const userIdsWithData = new Set<string>();
-    
-    if (filters.contentTypes.includes('quizzes')) {
-        filteredQuizAttempts.forEach(qa => userIdsWithData.add(qa.usuario_id));
-    }
-    if (filters.contentTypes.includes('simulations')) {
-        filteredSimRecords.forEach(sr => userIdsWithData.add(sr.usuario_id));
-    }
-    
-    if (filters.collaboratorId !== 'all' && userIdsWithData.size === 0 && usersList.find(u => u.id === filters.collaboratorId)) { 
-        userIdsWithData.add(filters.collaboratorId);
-    } else if (filters.collaboratorId === 'all' && userIdsWithData.size === 0) { 
-        usersList.forEach(u => userIdsWithData.add(u.id));
-    }
+        const filteredQuizAttempts: QuizAttemptRecord[] = (quizRes.data || []) as QuizAttemptRecord[];
+        const filteredSimRecords: SimulationRecord[] = (simRes.data || []) as SimulationRecord[];
 
-
-    userIdsWithData.forEach(userId => {
-      const user = usersList.find(u => u.id === userId) || { id: userId, name: `Usuário ${userId}` };
-      dataMap.set(userId, {
-        userId: user.id, userName: user.name, totalActivities: 0,
-        quizAttempts: 0, quizAverageScore: null, quizHighestScore: null, quizLowestScore: null,
-        strongQuizTopics: [], challengingQuizTopics: [],
-        simulationAttempts: 0, simulationSuccessRate: null,
-        simulationAverageAcolhimento: null, simulationAverageClareza: null,
-        simulationAverageArgumentacao: null, simulationAverageFechamento: null,
-      });
-    });
-
-    if (filters.contentTypes.includes('quizzes')) {
-      dataMap.forEach(userRow => {
-        const userQuizAttempts = filteredQuizAttempts.filter(qa => qa.usuario_id === userRow.userId);
-        userRow.quizAttempts = userQuizAttempts.length;
-        userRow.totalActivities += userRow.quizAttempts;
-
-        if (userQuizAttempts.length > 0) {
-            let totalScoreSum = 0;
-            userQuizAttempts.forEach(qa => {
-                const scorePercent = qa.resultado.totalQuestions > 0 ? (qa.resultado.score / qa.resultado.totalQuestions) * 100 : 0;
-                totalScoreSum += scorePercent;
-                if (userRow.quizHighestScore === null || scorePercent > userRow.quizHighestScore) userRow.quizHighestScore = scorePercent;
-                if (userRow.quizLowestScore === null || scorePercent < userRow.quizLowestScore) userRow.quizLowestScore = scorePercent;
-
-                if (kpis.quizTopicAnalysis) {
-                    const topicScores: Record<string, { correct: number, total: number }> = {};
-                    qa.resultado.answers.forEach(ans => {
-                        const question = qa.perguntas.find(q => q.id === ans.questionId);
-                        if (question?.topicTags) {
-                            question.topicTags.forEach(tag => {
-                                topicScores[tag] = topicScores[tag] || { correct: 0, total: 0 };
-                                topicScores[tag].total++;
-                                if (ans.isCorrect) topicScores[tag].correct++;
-                            });
-                        }
-                    });
-                    Object.entries(topicScores).forEach(([topic, scores]) => {
-                        const accuracy = scores.total > 0 ? (scores.correct / scores.total) * 100 : 0;
-                        if (accuracy >= 80 && scores.total >= 2) { 
-                             if (!userRow.strongQuizTopics.some(t => t.startsWith(topic))) userRow.strongQuizTopics.push(`${topic} (${accuracy.toFixed(0)}%)`);
-                        } else if (accuracy < 50 && scores.total >= 2) { 
-                             if (!userRow.challengingQuizTopics.some(t => t.startsWith(topic))) userRow.challengingQuizTopics.push(`${topic} (${accuracy.toFixed(0)}%)`);
-                        }
-                    });
-                }
-            });
-            userRow.quizAverageScore = totalScoreSum / userQuizAttempts.length;
+        const dataMap = new Map<string, ProcessedReportDataRow>();
+        const userIdsWithData = new Set<string>();
+        
+        if (filters.contentTypes.includes('quizzes')) {
+            filteredQuizAttempts.forEach(qa => userIdsWithData.add(qa.usuario_id));
         }
-      });
-    }
+        if (filters.contentTypes.includes('simulations')) {
+            filteredSimRecords.forEach(sr => userIdsWithData.add(sr.usuario_id));
+        }
+        
+        if (filters.collaboratorId !== 'all' && userIdsWithData.size === 0 && usersList.find(u => u.id === filters.collaboratorId)) { 
+            userIdsWithData.add(filters.collaboratorId);
+        } else if (filters.collaboratorId === 'all' && userIdsWithData.size === 0) { 
+            usersList.forEach(u => userIdsWithData.add(u.id));
+        }
 
-    if (filters.contentTypes.includes('simulations')) {
-      dataMap.forEach(userRow => {
-        const userSims = filteredSimRecords.filter(sr => sr.usuario_id === userRow.userId);
-        userRow.simulationAttempts = userSims.length;
-        userRow.totalActivities += userRow.simulationAttempts;
 
-        if (userSims.length > 0) {
-            let successfulSims = 0;
-            let sumAcolhimento = 0, sumClareza = 0, sumArgumentacao = 0, sumFechamento = 0;
-            let countAcolhimento = 0, countClareza = 0, countArgumentacao = 0, countFechamento = 0;
+        userIdsWithData.forEach(userId => {
+        const user = usersList.find(u => u.id === userId) || { id: userId, name: `Usuário ${userId}` };
+        dataMap.set(userId, {
+            userId: user.id, userName: user.name, totalActivities: 0,
+            quizAttempts: 0, quizAverageScore: null, quizHighestScore: null, quizLowestScore: null,
+            strongQuizTopics: [], challengingQuizTopics: [],
+            simulationAttempts: 0, simulationSuccessRate: null,
+            simulationAverageAcolhimento: null, simulationAverageClareza: null,
+            simulationAverageArgumentacao: null, simulationAverageFechamento: null,
+        });
+        });
 
-            userSims.forEach(sr => {
-                if (sr.conteudo.evaluation) {
-                    if (isSuccessOutcome(sr.conteudo.evaluation)) successfulSims++;
-                    if (sr.conteudo.evaluation.generalNotes) {
-                        if (sr.conteudo.evaluation.generalNotes.acolhimento !== null) { sumAcolhimento += sr.conteudo.evaluation.generalNotes.acolhimento; countAcolhimento++; }
-                        if (sr.conteudo.evaluation.generalNotes.clareza !== null) { sumClareza += sr.conteudo.evaluation.generalNotes.clareza; countClareza++; }
-                        if (sr.conteudo.evaluation.generalNotes.argumentacao !== null) { sumArgumentacao += sr.conteudo.evaluation.generalNotes.argumentacao; countArgumentacao++; }
-                        if (sr.conteudo.evaluation.generalNotes.fechamento !== null) { sumFechamento += sr.conteudo.evaluation.generalNotes.fechamento; countFechamento++; }
+        if (filters.contentTypes.includes('quizzes')) {
+        dataMap.forEach(userRow => {
+            const userQuizAttempts = filteredQuizAttempts.filter(qa => qa.usuario_id === userRow.userId);
+            userRow.quizAttempts = userQuizAttempts.length;
+            userRow.totalActivities += userRow.quizAttempts;
+
+            if (userQuizAttempts.length > 0) {
+                let totalScoreSum = 0;
+                userQuizAttempts.forEach(qa => {
+                    const scorePercent = qa.resultado.totalQuestions > 0 ? (qa.resultado.score / qa.resultado.totalQuestions) * 100 : 0;
+                    totalScoreSum += scorePercent;
+                    if (userRow.quizHighestScore === null || scorePercent > userRow.quizHighestScore) userRow.quizHighestScore = scorePercent;
+                    if (userRow.quizLowestScore === null || scorePercent < userRow.quizLowestScore) userRow.quizLowestScore = scorePercent;
+
+                    if (kpis.quizTopicAnalysis) {
+                        const topicScores: Record<string, { correct: number, total: number }> = {};
+                        qa.resultado.answers.forEach(ans => {
+                            const question = qa.perguntas.find(q => q.id === ans.questionId);
+                            if (question?.topicTags) {
+                                question.topicTags.forEach(tag => {
+                                    topicScores[tag] = topicScores[tag] || { correct: 0, total: 0 };
+                                    topicScores[tag].total++;
+                                    if (ans.isCorrect) topicScores[tag].correct++;
+                                });
+                            }
+                        });
+                        Object.entries(topicScores).forEach(([topic, scores]) => {
+                            const accuracy = scores.total > 0 ? (scores.correct / scores.total) * 100 : 0;
+                            if (accuracy >= 80 && scores.total >= 2) { 
+                                if (!userRow.strongQuizTopics.some(t => t.startsWith(topic))) userRow.strongQuizTopics.push(`${topic} (${accuracy.toFixed(0)}%)`);
+                            } else if (accuracy < 50 && scores.total >= 2) { 
+                                if (!userRow.challengingQuizTopics.some(t => t.startsWith(topic))) userRow.challengingQuizTopics.push(`${topic} (${accuracy.toFixed(0)}%)`);
+                            }
+                        });
                     }
-                }
-            });
-            userRow.simulationSuccessRate = (successfulSims / userSims.length) * 100;
-            if (countAcolhimento > 0) userRow.simulationAverageAcolhimento = sumAcolhimento / countAcolhimento;
-            if (countClareza > 0) userRow.simulationAverageClareza = sumClareza / countClareza;
-            if (countArgumentacao > 0) userRow.simulationAverageArgumentacao = sumArgumentacao / countArgumentacao;
-            if (countFechamento > 0) userRow.simulationAverageFechamento = sumFechamento / countFechamento;
+                });
+                userRow.quizAverageScore = totalScoreSum / userQuizAttempts.length;
+            }
+        });
         }
-      });
+
+        if (filters.contentTypes.includes('simulations')) {
+        dataMap.forEach(userRow => {
+            const userSims = filteredSimRecords.filter(sr => sr.usuario_id === userRow.userId);
+            userRow.simulationAttempts = userSims.length;
+            userRow.totalActivities += userRow.simulationAttempts;
+
+            if (userSims.length > 0) {
+                let successfulSims = 0;
+                let sumAcolhimento = 0, sumClareza = 0, sumArgumentacao = 0, sumFechamento = 0;
+                let countAcolhimento = 0, countClareza = 0, countArgumentacao = 0, countFechamento = 0;
+
+                userSims.forEach(sr => {
+                    if (sr.conteudo.evaluation) {
+                        if (isSuccessOutcome(sr.conteudo.evaluation)) successfulSims++;
+                        if (sr.conteudo.evaluation.generalNotes) {
+                            if (sr.conteudo.evaluation.generalNotes.acolhimento !== null) { sumAcolhimento += sr.conteudo.evaluation.generalNotes.acolhimento; countAcolhimento++; }
+                            if (sr.conteudo.evaluation.generalNotes.clareza !== null) { sumClareza += sr.conteudo.evaluation.generalNotes.clareza; countClareza++; }
+                            if (sr.conteudo.evaluation.generalNotes.argumentacao !== null) { sumArgumentacao += sr.conteudo.evaluation.generalNotes.argumentacao; countArgumentacao++; }
+                            if (sr.conteudo.evaluation.generalNotes.fechamento !== null) { sumFechamento += sr.conteudo.evaluation.generalNotes.fechamento; countFechamento++; }
+                        }
+                    }
+                });
+                userRow.simulationSuccessRate = (successfulSims / userSims.length) * 100;
+                if (countAcolhimento > 0) userRow.simulationAverageAcolhimento = sumAcolhimento / countAcolhimento;
+                if (countClareza > 0) userRow.simulationAverageClareza = sumClareza / countClareza;
+                if (countArgumentacao > 0) userRow.simulationAverageArgumentacao = sumArgumentacao / countArgumentacao;
+                if (countFechamento > 0) userRow.simulationAverageFechamento = sumFechamento / countFechamento;
+            }
+        });
+        }
+        return Array.from(dataMap.values()).filter(row => row.totalActivities > 0 || filters.collaboratorId !== 'all' || filters.period === 'allTime');
+
+    } catch (error: any) {
+        setFetchError(error.message || "Erro desconhecido ao processar dados do relatório.");
+        return [];
     }
-    return Array.from(dataMap.values()).filter(row => row.totalActivities > 0 || filters.collaboratorId !== 'all' || filters.period === 'allTime');
   }, [filters, usersList, kpis.quizTopicAnalysis]);
 
   const generateReport = useCallback(async () => {
     setIsLoading(true);
+    setGeneratedReportTitle(null); // Clear previous title
+    setReportData([]); // Clear previous data
     const data = await processData();
     setReportData(data);
     
@@ -407,8 +427,19 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
     doc.save('relatorio_geniunm.pdf');
   };
 
-  if (isLoading && usersList.length === 0) { // Show loading only on initial user fetch
+  if (isLoading && usersList.length === 0 && !fetchError) { 
     return <section id="reports" className="py-8"><LoadingSpinner text="Carregando dados para relatórios..." /></section>;
+  }
+  if (fetchError && usersList.length === 0) {
+    return (
+        <section id="reports" className="py-8">
+            <GlassCard className="p-6 text-center">
+                <h1 className="section-title !text-center text-[var(--error)]">Erro ao Carregar Dados Iniciais</h1>
+                <p className="text-[var(--color-text)]">{fetchError}</p>
+                <GlassButton onClick={() => window.location.reload()} className="mt-4">Recarregar Página</GlassButton>
+            </GlassCard>
+        </section>
+    );
   }
 
 
@@ -476,6 +507,9 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
         <GlassButton onClick={generateReport} disabled={isLoading} className="themed-button">
           {isLoading ? <LoadingSpinner size="sm" /> : <><i className="fas fa-cogs mr-2"></i>Gerar Relatório</>}
         </GlassButton>
+         {fetchError && !isLoading && (
+            <p className="text-[var(--error)] text-sm mt-3">{fetchError}</p>
+        )}
       </GlassCard>
 
       {reportData.length > 0 && !isLoading && (
@@ -521,7 +555,7 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ currentUser }) => {
           )}
         </GlassCard>
       )}
-      {reportData.length === 0 && !isLoading && generatedReportTitle && (
+      {reportData.length === 0 && !isLoading && generatedReportTitle && !fetchError && (
          <GlassCard className="p-4 md:p-6 text-center">
             <p className="text-lg text-[var(--color-text-light)]">Nenhum dado encontrado para os filtros selecionados.</p>
         </GlassCard>
