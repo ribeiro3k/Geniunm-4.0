@@ -9,43 +9,37 @@ import LoadingSpinner from './ui/LoadingSpinner';
 
 interface HomeSectionProps {
   currentUser: CurrentUserType;
-  onLogin: (email: string, password: string) => Promise<string | null>;
+  onLogin: (usernameOrAdminKeyword: string, passwordPlainText: string, isTryingAdminLogin: boolean) => Promise<string | null>;
   authError: string | null;
   isLoadingAuth: boolean;
+  setAuthError: (error: string | null) => void;
 }
+
+type LoginMode = 'consultor' | 'admin';
 
 const HomeSection: React.FC<HomeSectionProps> = ({ 
   currentUser, 
   onLogin,
-  authError,
-  isLoadingAuth
+  authError, 
+  isLoadingAuth,
+  setAuthError
 }) => {
-  const [email, setEmail] = useState('');
+  const [loginMode, setLoginMode] = useState<LoginMode>('consultor');
+  const [consultantName, setConsultantName] = useState('');
   const [password, setPassword] = useState('');
-  const [loginAttemptError, setLoginAttemptError] = useState<string | null>(null);
+  const [showAccessInfo, setShowAccessInfo] = useState(false);
   
-  const [showAdminAccessInfo, setShowAdminAccessInfo] = useState(false);
-
-
   const handleLoginAttempt = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setLoginAttemptError(null);
-    const errorMsg = await onLogin(email, password);
-    if (errorMsg) {
-      if (errorMsg.toLowerCase().includes("invalid login credentials")) {
-        setLoginAttemptError('Email ou senha incorretos. Verifique seus dados e tente novamente.');
-      } else if (errorMsg.toLowerCase().includes("user not found")) {
-        setLoginAttemptError('Usuário não encontrado. Verifique o email digitado.');
-      } else {
-        setLoginAttemptError(`Erro no login: ${errorMsg}`);
-      }
-    } else {
-      // Successful login is handled by App.tsx navigation
-      setEmail('');
+    
+    const usernameOrAdminKeyword = loginMode === 'admin' ? 'admin_fixed_user' : consultantName;
+    const errorMsg = await onLogin(usernameOrAdminKeyword, password, loginMode === 'admin');
+    
+    if (!errorMsg) { 
+      setConsultantName('');
       setPassword('');
     }
   };
-
 
   if (!currentUser) {
     return (
@@ -59,37 +53,61 @@ const HomeSection: React.FC<HomeSectionProps> = ({
             </p>
           </div>
 
+          <div className="mb-4 flex border border-[var(--color-border)] rounded-lg overflow-hidden">
+            <button
+              onClick={() => { setLoginMode('consultor'); setAuthError(null); setPassword(''); }}
+              className={`flex-1 py-2 px-3 text-sm transition-colors duration-150
+                ${loginMode === 'consultor' ? 'bg-[var(--color-primary)] text-white font-medium shadow-inner' : 'bg-[var(--color-input-bg)] text-[var(--color-text-light)] hover:bg-[var(--color-border)]'}`}
+            >
+              Sou Consultor
+            </button>
+            <button
+              onClick={() => { setLoginMode('admin'); setAuthError(null); setPassword(''); }}
+              className={`flex-1 py-2 px-3 text-sm transition-colors duration-150
+                ${loginMode === 'admin' ? 'bg-[var(--color-primary)] text-white font-medium shadow-inner' : 'bg-[var(--color-input-bg)] text-[var(--color-text-light)] hover:bg-[var(--color-border)]'}`}
+            >
+              Sou Administrador
+            </button>
+          </div>
+
           <form onSubmit={handleLoginAttempt} className="mb-5">
-            <div className="mb-3">
-              <label htmlFor="email-login" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Email:</label>
-              <input
-                type="email"
-                id="email-login"
-                className="themed-input w-full !text-sm"
-                value={email}
-                onChange={(e) => {setEmail(e.target.value); setLoginAttemptError(null);}}
-                placeholder="seu.email@dominio.com"
-                required
-                autoComplete="email"
-              />
-            </div>
+            {loginMode === 'consultor' && (
+              <div className="mb-3">
+                <label htmlFor="consultant-name-login" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Nome de Usuário:</label>
+                <input
+                  type="text"
+                  id="consultant-name-login"
+                  className="themed-input w-full !text-sm"
+                  value={consultantName}
+                  onChange={(e) => setConsultantName(e.target.value)}
+                  placeholder="Seu nome de consultor"
+                  required
+                  autoComplete="username"
+                  aria-describedby={authError ? "auth-error-message" : undefined}
+                />
+              </div>
+            )}
+
             <div className="mb-4">
-              <label htmlFor="password-login" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">Senha:</label>
+              <label htmlFor="password-login" className="block text-sm font-medium text-[var(--color-text-light)] mb-1">
+                {loginMode === 'admin' ? 'Senha do Administrador:' : 'Senha:'}
+              </label>
               <input
                 type="password"
                 id="password-login"
                 className="themed-input w-full !text-sm"
                 value={password}
-                onChange={(e) => {setPassword(e.target.value); setLoginAttemptError(null);}}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="********"
                 required
                 autoComplete="current-password"
+                aria-describedby={authError ? "auth-error-message" : undefined}
               />
             </div>
             
-            {(loginAttemptError || authError) && (
-              <p className="text-xs text-[var(--error)] mb-3 text-center bg-[rgba(var(--error-rgb),0.1)] p-1.5 rounded-md border border-[rgba(var(--error-rgb),0.2)]">
-                {loginAttemptError || authError}
+            {authError && (
+              <p id="auth-error-message" className="text-xs text-[var(--error)] mb-3 text-center bg-[rgba(var(--error-rgb),0.1)] p-1.5 rounded-md border border-[rgba(var(--error-rgb),0.2)]" role="alert">
+                {authError}
               </p>
             )}
 
@@ -100,14 +118,16 @@ const HomeSection: React.FC<HomeSectionProps> = ({
           
           <div className="mt-4 text-center">
             <button 
-              onClick={() => setShowAdminAccessInfo(prev => !prev)}
+              onClick={() => setShowAccessInfo(prev => !prev)}
               className="text-xs text-[var(--color-text-light)] hover:text-[var(--color-primary)] underline"
             >
-              Informações de Acesso {showAdminAccessInfo ? <i className="fas fa-chevron-up ml-1"></i> : <i className="fas fa-chevron-down ml-1"></i>}
+              Informações de Acesso {showAccessInfo ? <i className="fas fa-chevron-up ml-1"></i> : <i className="fas fa-chevron-down ml-1"></i>}
             </button>
-            {showAdminAccessInfo && (
+            {showAccessInfo && (
               <p className="text-xs text-[var(--color-text-light)] mt-2 bg-[var(--color-input-bg)] p-2 rounded-md border border-[var(--color-border)]">
-                Utilize seu email e senha cadastrados. Administradores e consultores usam este mesmo formulário. O acesso é determinado pelo seu tipo de usuário no sistema.
+                {loginMode === 'admin' 
+                  ? "Insira a senha de administrador definida no sistema." 
+                  : "Consultores: utilizem o nome de usuário e senha cadastrados pelo administrador."}
               </p>
             )}
           </div>
@@ -120,15 +140,18 @@ const HomeSection: React.FC<HomeSectionProps> = ({
   // Logged-in view
   const welcomeNavItems = NAV_ITEMS.filter(item => 
     item.section !== NavigationSection.Home && 
-    (!item.adminOnly || (item.adminOnly && currentUser?.tipo === 'admin')) && // Show adminOnly items only to admins
-    item.icon 
+    (!item.adminOnly || (item.adminOnly && currentUser?.tipo === 'admin')) &&
+    item.icon && // Ensure item has an icon to display
+    // For admin, only show adminOnly items on the home page.
+    // For consultant, show non-adminOnly items.
+    (currentUser?.tipo === 'admin' ? item.adminOnly : !item.adminOnly)
   );
 
 
   return (
     <section id="home" className="py-8">
       <GlassCard className="text-center p-6 md:p-10">
-        <img src={currentUser.avatarUrl || "/logo.png"} alt={currentUser.avatarUrl ? "Avatar do Usuário" : "Geniunm Logo"} className={`w-24 h-24 mx-auto mb-4 ${currentUser.avatarUrl ? 'rounded-full object-cover' : ''}`} onError={(e) => (e.currentTarget.src = '/logo.png')} />
+        <img src={currentUser.avatarUrl || "/logo.png"} alt={currentUser.avatarUrl ? "Avatar do Usuário" : "Geniunm Logo"} className={`w-24 h-24 mx-auto mb-4 ${currentUser.avatarUrl ? 'rounded-full object-cover' : ''}`} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo.png';}} />
         <h1 className="section-title !text-3xl md:!text-4xl !text-center !border-b-0">
           Olá, {currentUser.nome || 'Usuário'}!
         </h1>
