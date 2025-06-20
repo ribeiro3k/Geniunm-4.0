@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AppUser, QuizAttemptRecord, SimulationRecord, Message, ParsedEvaluation, QuizQuestionType, UserAnswer, PerformanceSnapshotData, NavigationSection, ParsedErrorOrSuccessItem } from '../../types';
@@ -6,7 +5,7 @@ import GlassCard from '../ui/GlassCard';
 import GlassButton from '../ui/GlassButton';
 import MessageBubble from '../SimulatorSection/MessageBubble';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { SIMULATION_HEADINGS, GEMINI_COMMERCIAL_MANAGER_ANALYSIS_PROMPT_TEMPLATE, AI_ANALYSIS_LOADING_MESSAGES, LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY, LOCAL_STORAGE_SIMULATION_RECORDS_KEY, TABLE_USUARIOS, TABLE_QUIZZES, TABLE_SIMULACOES } from '../../constants';
+import { SIMULATION_HEADINGS, GEMINI_COMMERCIAL_MANAGER_ANALYSIS_PROMPT_TEMPLATE, AI_ANALYSIS_LOADING_MESSAGES, LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY, LOCAL_STORAGE_SIMULATION_RECORDS_KEY, TABLE_USUARIOS, TABLE_QUIZZES, TABLE_SIMULACOES, SUPABASE_ERROR_MESSAGE } from '../../constants';
 import { generateCollaboratorAnalysis } from '../../services/geminiService';
 import { formatDate } from '../../lib/utils'; // Import shared utility
 import AnimatedLoadingText from '../ui/AnimatedLoadingText'; // Import shared component
@@ -150,17 +149,25 @@ const CollaboratorDashboard: React.FC = () => {
   const [selectedQuizAttempt, setSelectedQuizAttempt] = useState<QuizAttemptRecord | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isGeneratingAiAnalysis, setIsGeneratingAiAnalysis] = useState(false);
   const [generatedAiAnalysisText, setGeneratedAiAnalysisText] = useState<string | null>(null);
   const [aiAnalysisError, setAiAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId || !supabase) {
+    if (!userId) {
       setIsLoading(false);
+      setFetchError("ID do colaborador não fornecido.");
       return;
+    }
+    if (!supabase) {
+        setIsLoading(false);
+        setFetchError(`Não foi possível carregar dados do colaborador: ${SUPABASE_ERROR_MESSAGE}`);
+        return;
     }
 
     setIsLoading(true);
+    setFetchError(null);
     
     const fetchData = async () => {
         try {
@@ -170,18 +177,19 @@ const CollaboratorDashboard: React.FC = () => {
                 supabase.from(TABLE_SIMULACOES).select('*').eq('usuario_id', userId).order('criado_em', { ascending: false })
             ]);
 
-            if (userRes.error) throw userRes.error;
+            if (userRes.error) throw new Error(`Erro ao buscar colaborador: ${userRes.error.message}`);
             if (userRes.data) {
               setCollaborator(userRes.data as AppUser);
             } else {
-              setCollaborator({id: userId, nome: `Usuário ${userId}`, email: '', tipo: 'consultor'}); // Fallback
+              setFetchError(`Colaborador com ID ${userId} não encontrado.`);
+              setCollaborator(null); // Ensure collaborator is null if not found
             }
 
-            if (quizRes.error) throw quizRes.error;
+            if (quizRes.error) throw new Error(`Erro ao buscar quizzes: ${quizRes.error.message}`);
             const fetchedQuizAttempts = (quizRes.data || []) as QuizAttemptRecord[];
             setUserQuizAttempts(fetchedQuizAttempts);
             
-            if (simRes.error) throw simRes.error;
+            if (simRes.error) throw new Error(`Erro ao buscar simulações: ${simRes.error.message}`);
             const fetchedSimRecords = (simRes.data || []).map(record => ({
                 ...record,
                 conteudo: {
@@ -253,9 +261,9 @@ const CollaboratorDashboard: React.FC = () => {
               recentCriticalFeedback: recentCriticalFb.slice(0,3),
             });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error loading collaborator data:", error);
-            // Handle error state appropriately
+            setFetchError(error.message || "Ocorreu um erro desconhecido ao carregar os dados.");
         } finally {
             setIsLoading(false);
         }
@@ -378,7 +386,21 @@ const CollaboratorDashboard: React.FC = () => {
     return <div className="py-12"><LoadingSpinner text={`Carregando dados do colaborador ${collaborator?.nome || userId}...`} /></div>;
   }
 
-  if (!userId || !collaborator) {
+  if (fetchError) {
+    return (
+        <section className="py-8">
+          <GlassCard className="p-6 text-center">
+            <h1 className="section-title !text-center text-[var(--error)]">Erro ao Carregar Dados</h1>
+            <p className="text-[var(--color-text)]">{fetchError}</p>
+            <Link to={`/${NavigationSection.AdminPanel}`} className="inline-block mt-4">
+              <GlassButton className="themed-button">Voltar ao Painel Admin</GlassButton>
+            </Link>
+          </GlassCard>
+        </section>
+      );
+  }
+  
+  if (!collaborator) { // Added check for collaborator being null after loading and no error
     return (
       <section className="py-8">
         <h1 className="section-title">Colaborador Não Encontrado</h1>
@@ -391,6 +413,7 @@ const CollaboratorDashboard: React.FC = () => {
       </section>
     );
   }
+
 
   const renderDetailedEvaluation = (evaluation: ParsedEvaluation) => {
     return (
