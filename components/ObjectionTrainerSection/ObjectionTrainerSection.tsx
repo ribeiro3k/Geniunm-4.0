@@ -5,11 +5,9 @@ import { OBJECTIONS_LIST, API_KEY_ERROR_MESSAGE } from '../../constants';
 import { evaluateObjectionResponse, transcribeAudioWithGemini } from '../../services/geminiService';
 import AudioControls from '../SimulatorSection/AudioControls'; 
 import LoadingSpinner from '../ui/LoadingSpinner';
-import GlassButton from '../ui/GlassButton'; // Renders as themed-button
-import GlassCard from '../ui/GlassCard'; // Renders as themed-surface
-import { blobToBase64 } from '../../lib/utils'; // Import shared utility
-
-// blobToBase64 REMOVED, now imported from utils
+import GlassButton from '../ui/GlassButton'; 
+import GlassCard from '../ui/GlassCard'; 
+import { blobToBase64 } from '../../lib/utils'; 
 
 const ObjectionTrainerSection: React.FC = () => {
   const [selectedObjection, setSelectedObjection] = useState<Objection | null>(OBJECTIONS_LIST[0] || null);
@@ -27,10 +25,10 @@ const ObjectionTrainerSection: React.FC = () => {
 
 
   useEffect(() => {
-    // Alterado para buscar a variável de process.env
+    // Acessar a API Key usando process.env.API_KEY
     if (!process.env.API_KEY) {
       setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE); // A mensagem em constants.ts já foi atualizada
+      setError(API_KEY_ERROR_MESSAGE); 
     }
   }, []);
 
@@ -140,13 +138,9 @@ const ObjectionTrainerSection: React.FC = () => {
   
     let html = text;
   
-    // Bold: **text** or __text__
     html = html.replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<strong>$1$2</strong>');
-  
-    // Italic: *text* or _text_
     html = html.replace(/\*(.*?)\*|_(.*?)_/g, '<em>$1$2</em>');
   
-    // Process lines for lists and paragraphs
     const lines = html.split('\n');
     let processedHtml = "";
     let inListType: 'ul' | 'ol' | null = null;
@@ -213,7 +207,7 @@ const ObjectionTrainerSection: React.FC = () => {
   if (!apiKeyAvailable) {
     return (
       <section id="objection-trainer" className="py-12 mt-8">
-        <GlassCard className="max-w-3xl mx-auto text-center p-8"> {/* themed-surface */}
+        <GlassCard className="max-w-3xl mx-auto text-center p-8"> 
           <h2 className="section-title text-[rgba(var(--error-rgb),0.9)]">Erro de Configuração</h2>
           <p className="text-xl text-[var(--text-primary)]">{API_KEY_ERROR_MESSAGE}</p>
           <p className="mt-4 text-[var(--text-secondary)]">Por favor, configure a API Key para usar o Treinador de Objeções.</p>
@@ -224,7 +218,7 @@ const ObjectionTrainerSection: React.FC = () => {
 
   return (
     <section id="objection-trainer" className="py-12 mt-8">
-      <GlassCard className="max-w-3xl mx-auto p-6 md:p-8"> {/* themed-surface */}
+      <GlassCard className="max-w-3xl mx-auto p-6 md:p-8"> 
         <h2 className="section-title">Treinador de Objeções</h2>
         <p className="mb-8 text-center text-[var(--text-secondary)] text-sm">
           Selecione uma objeção comum, formule sua melhor resposta e receba feedback da IA para aprimorar suas técnicas.
@@ -240,17 +234,17 @@ const ObjectionTrainerSection: React.FC = () => {
             id="objection-select"
             value={selectedObjection?.id || ''}
             onChange={handleObjectionChange}
-            className="themed-input themed-select w-full" // Use themed-input and themed-select
+            className="themed-input themed-select w-full" 
             disabled={isLoading || isRecording || isTranscribing}
           >
             {OBJECTIONS_LIST.map(ob => (
-              <option key={ob.id} value={ob.id}>{ob.text}</option> // Options will use browser default or themed-select styling
+              <option key={ob.id} value={ob.id}>{ob.text}</option> 
             ))}
           </select>
         </div>
 
         {selectedObjection && (
-          <GlassCard className="mb-6 p-4 themed-surface-secondary"> {/* themed-surface-secondary */}
+          <GlassCard className="mb-6 p-4 themed-surface-secondary"> 
             <h4 className="font-semibold text-[var(--accent-primary)]">Objeção Selecionada:</h4>
             <p className="text-[var(--text-primary)] mt-1">{selectedObjection.text}</p>
             {selectedObjection.context && (
@@ -263,11 +257,11 @@ const ObjectionTrainerSection: React.FC = () => {
           <label htmlFor="user-response" className="block text-sm font-medium text-[var(--accent-primary)] mb-2">
             Sua Resposta:
           </label>
-          <div className="flex items-stretch"> {/* items-stretch for equal height */}
+          <div className="flex items-stretch"> 
             <textarea
               id="user-response"
               rows={5}
-              className="themed-textarea flex-grow !rounded-r-none" // Use themed-textarea and adjust border radius
+              className="themed-textarea flex-grow !rounded-r-none" 
               placeholder="Digite aqui como você contornaria essa objeção..."
               value={userResponse}
               onChange={(e) => setUserResponse(e.target.value)}
@@ -296,7 +290,7 @@ const ObjectionTrainerSection: React.FC = () => {
         {aiEvaluation && !isLoading && (
           <div className="mt-6 pt-6 border-t border-[var(--border-color-light)]">
             <h3 className="section-title">Feedback da IA</h3>
-            <GlassCard className="p-4 md:p-6 themed-surface-secondary"> {/* themed-surface-secondary */}
+            <GlassCard className="p-4 md:p-6 themed-surface-secondary"> 
               <div className="prose prose-sm max-w-none text-[var(--text-primary)]" dangerouslySetInnerHTML={{ __html: renderEvaluationText(aiEvaluation) }} />
             </GlassCard>
           </div>
