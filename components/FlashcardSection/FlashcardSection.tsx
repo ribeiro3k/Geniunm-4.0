@@ -7,9 +7,9 @@ import { FLASHCARD_THEMES, API_KEY_ERROR_MESSAGE, FLASHCARD_LOADING_MESSAGES } f
 import Flashcard from './Flashcard';
 import HistoryItem from './HistoryItem';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import GlassButton from '../ui/GlassButton'; // Renders as themed-button
-import GlassCard from '../ui/GlassCard'; // Renders as themed-surface
-import AnimatedLoadingText from '../ui/AnimatedLoadingText'; // Import shared component
+import GlassButton from '../ui/GlassButton'; 
+import GlassCard from '../ui/GlassCard'; 
+import AnimatedLoadingText from '../ui/AnimatedLoadingText'; 
 
 const FlashcardSection: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<FlashcardContent | null>(null);
@@ -24,10 +24,10 @@ const FlashcardSection: React.FC = () => {
 
   useEffect(() => {
     tempDivRef.current = document.createElement('div');
-    // Alterado para buscar a variável de process.env
+    // Acessar a API Key usando process.env.API_KEY
     if (!process.env.API_KEY) {
       setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE); // A mensagem em constants.ts já foi atualizada
+      setError(API_KEY_ERROR_MESSAGE); 
       setCurrentCard({
         id: 'flashcard_error_config_apikey',
         front: "Erro de Configuração",
@@ -39,7 +39,7 @@ const FlashcardSection: React.FC = () => {
     }
     
     return () => {
-        // Clean up temp div if necessary, though for simple textContent it's less critical
+        // Clean up temp div if necessary
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
@@ -61,7 +61,7 @@ const FlashcardSection: React.FC = () => {
       const newCard = await generateFlashcardFromGemini(selectedTheme);
       if (newCard) {
         setCurrentCard(newCard);
-        if (!history.some(hCard => hCard.id === newCard.id)) { // Check ID for history uniqueness
+        if (!history.some(hCard => hCard.id === newCard.id)) { 
            setHistory(prev => [newCard, ...prev.slice(0, 9)]); 
         }
       } else {
@@ -125,7 +125,7 @@ const FlashcardSection: React.FC = () => {
 
   return (
     <section id="flashcards" className="py-12 mt-8">
-      <GlassCard className="max-w-4xl mx-auto p-6 md:p-8"> {/* themed-surface */}
+      <GlassCard className="max-w-4xl mx-auto p-6 md:p-8"> 
         <h2 className="section-title">Flashcards Interativos</h2>
         <p className="mb-8 text-center text-[var(--text-secondary)] text-sm">
           Clique no card para virar. Gere novos cards com IA sobre técnicas de vendas.
@@ -138,7 +138,7 @@ const FlashcardSection: React.FC = () => {
               "{copiedSide === 'front' ? currentCard.front.substring(0,20)+'...' : 'Verso'}": Copiado!
             </div>
           )}
-          <GlassCard className="w-full md:w-60 h-auto md:h-[250px] flex flex-col p-4 themed-surface-secondary"> {/* themed-surface-secondary for history card */}
+          <GlassCard className="w-full md:w-60 h-auto md:h-[250px] flex flex-col p-4 themed-surface-secondary"> 
             <h4 className="text-lg font-semibold mb-3 text-[var(--accent-primary)]">Histórico</h4>
             <div className="flashcard-history flex-grow max-h-48 md:max-h-full overflow-y-auto custom-scrollbar pr-2">
               {history.length > 0 ? (
@@ -155,7 +155,7 @@ const FlashcardSection: React.FC = () => {
             {isLoading && !currentCard && <LoadingSpinner text="Gerando card inicial..." />}
             {!isLoading && !currentCard && !apiKeyAvailable && 
               <div className="flashcard-main">
-                   <GlassCard className="flashcard-inner flex flex-col items-center justify-center p-4"> {/* themed-surface */}
+                   <GlassCard className="flashcard-inner flex flex-col items-center justify-center p-4"> 
                       <p className="text-red-400 text-center font-semibold text-lg">Chave de API Faltando</p>
                       <p className="text-[var(--text-secondary)] text-center text-sm mt-2">{API_KEY_ERROR_MESSAGE}</p>
                    </GlassCard>
@@ -197,7 +197,7 @@ const FlashcardSection: React.FC = () => {
                         key={theme}
                         onClick={() => handleGenerateCard(theme)}
                         disabled={isLoading || !apiKeyAvailable}
-                        className="text-xs px-3 py-1.5 themed-button" // Ensure themed-button style
+                        className="text-xs px-3 py-1.5 themed-button" 
                     >
                         {theme}
                     </GlassButton>
