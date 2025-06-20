@@ -14,10 +14,9 @@ import UserManagementPanel from './components/AdminSection/UserManagementPanel';
 import ReportsSection from './components/AdminSection/ReportsSection'; 
 import PersonaCustomizationPanel from './components/AdminSection/PersonaCustomizationPanel'; 
 import ProtectedRoute from './components/ProtectedRoute';
-import { NavigationSection, AppUser, CurrentUserType, SimpleUserCredentials } from './types'; 
-import { NAV_ITEMS, LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX, TABLE_USUARIOS, ADMIN_FIXED_PASSWORD, LOCAL_STORAGE_CURRENT_USER_KEY, LOCAL_STORAGE_CONSULTANT_USERS_KEY } from './constants'; 
-// Supabase client can still be used for data operations, but not auth here.
-// import { supabase } from './lib/supabaseClient'; 
+import { NavigationSection, AppUser, CurrentUserType } from './types'; 
+import { NAV_ITEMS, LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX, ADMIN_FIXED_PASSWORD, LOCAL_STORAGE_CURRENT_USER_KEY, TABLE_USUARIOS, SUPABASE_ERROR_MESSAGE } from './constants'; 
+import { supabase } from './lib/supabaseClient'; 
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 
@@ -55,26 +54,29 @@ const AppContent: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [currentUser, setCurrentUser] = useState<CurrentUserType>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true); // For initial local storage check
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true); 
   const [authError, setAuthError] = useState<string | null>(null);
 
 
-  // Check for existing user in localStorage on initial load
   useEffect(() => {
     setIsLoadingAuth(true);
     try {
       const storedUser = localStorage.getItem(LOCAL_STORAGE_CURRENT_USER_KEY);
       if (storedUser) {
         const user: AppUser = JSON.parse(storedUser);
-        setCurrentUser(user);
-         // Initial navigation after session load
-        if (user.tipo === 'admin' && (location.pathname === '/' || location.pathname === `/${NavigationSection.Home}` || location.hash === `#/` || location.hash === `#/home`)) {
-            navigate(`/${NavigationSection.AdminPanel}`, { replace: true });
+        // Basic validation of stored user structure
+        if (user && user.id && user.nome && user.tipo) {
+            setCurrentUser(user);
+            if (user.tipo === 'admin' && (location.pathname === '/' || location.pathname === `/${NavigationSection.Home}` || location.hash === `#/` || location.hash === `#/home`)) {
+                navigate(`/${NavigationSection.AdminPanel}`, { replace: true });
+            }
+        } else {
+             localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER_KEY); // Clear corrupted/invalid data
         }
       }
     } catch (error) {
       console.error("Error reading user from localStorage:", error);
-      localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER_KEY); // Clear corrupted data
+      localStorage.removeItem(LOCAL_STORAGE_CURRENT_USER_KEY); 
     }
     setIsLoadingAuth(false);
   }, [navigate, location.pathname, location.hash]);
@@ -109,10 +111,10 @@ const AppContent: React.FC = () => {
     if (isTryingAdminLogin) {
       if (passwordInput === ADMIN_FIXED_PASSWORD) {
         const adminUser: AppUser = {
-          id: 'admin_fixed_user', // Fixed ID for the admin
+          id: 'admin_fixed_user',
           nome: 'Administrador',
           tipo: 'admin',
-          avatarUrl: '/logo.png' // Example avatar
+          avatarUrl: '/logo.png' 
         };
         setCurrentUser(adminUser);
         localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(adminUser));
@@ -125,32 +127,52 @@ const AppContent: React.FC = () => {
         setIsLoadingAuth(false);
         return "Senha de administrador incorreta.";
       }
-    } else { // Consultant login
-      const storedUsersRaw = localStorage.getItem(LOCAL_STORAGE_CONSULTANT_USERS_KEY);
-      const consultantUsers: SimpleUserCredentials[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
-      
-      const foundUser = consultantUsers.find(
-        (user) => user.username.toLowerCase() === usernameOrAdminKeyword.toLowerCase() && user.passwordPlainText === passwordInput
-      );
+    } else { // Consultant login - now uses Supabase
+      if (!supabase) {
+        setAuthError(`Falha na autenticação: ${SUPABASE_ERROR_MESSAGE}`);
+        setIsLoadingAuth(false);
+        return `Falha na autenticação: ${SUPABASE_ERROR_MESSAGE}`;
+      }
+      try {
+        const { data: consultantData, error: fetchError } = await supabase
+          .from(TABLE_USUARIOS)
+          .select('id, nome, email, tipo, password, avatarUrl, criado_em') // Fetch password for comparison
+          .eq('nome', usernameOrAdminKeyword)
+          .eq('tipo', 'consultor')
+          .single();
 
-      if (foundUser) {
-        const consultantAppUser: AppUser = {
-          id: foundUser.id || foundUser.username, // Use stored ID or username as ID
-          nome: foundUser.username,
-          tipo: 'consultor',
-          password: foundUser.passwordPlainText, // Store for session or future validation if needed, though not ideal
-          // avatarUrl: can be added later if consultant profiles have avatars
-        };
-        setCurrentUser(consultantAppUser);
-        localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(consultantAppUser));
-        localStorage.setItem(`${LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX}${consultantAppUser.id}`, new Date().toISOString());
-        navigate(`/${NavigationSection.Home}`, { replace: true });
+        if (fetchError || !consultantData) {
+          setAuthError("Nome de usuário do consultor não encontrado ou erro na busca.");
+          setIsLoadingAuth(false);
+          return "Nome de usuário do consultor não encontrado.";
+        }
+        
+        // WARNING: Direct password comparison. In production, this should be a hash comparison handled server-side.
+        if (consultantData.password === passwordInput) {
+          const consultantAppUser: AppUser = {
+            id: consultantData.id,
+            nome: consultantData.nome,
+            tipo: consultantData.tipo as 'consultor', // Ensure correct type
+            email: consultantData.email,
+            avatarUrl: consultantData.avatarUrl,
+            criado_em: consultantData.criado_em,
+          };
+          setCurrentUser(consultantAppUser);
+          localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(consultantAppUser));
+          localStorage.setItem(`${LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX}${consultantAppUser.id}`, new Date().toISOString());
+          navigate(`/${NavigationSection.Home}`, { replace: true });
+          setIsLoadingAuth(false);
+          return null; // Success
+        } else {
+          setAuthError("Senha do consultor incorreta.");
+          setIsLoadingAuth(false);
+          return "Senha do consultor incorreta.";
+        }
+      } catch (error) {
+        console.error("Error during consultant login:", error);
+        setAuthError("Erro inesperado durante o login do consultor.");
         setIsLoadingAuth(false);
-        return null; // Success
-      } else {
-        setAuthError("Nome de usuário ou senha do consultor inválidos.");
-        setIsLoadingAuth(false);
-        return "Nome de usuário ou senha do consultor inválidos.";
+        return "Erro inesperado durante o login do consultor.";
       }
     }
   };
@@ -179,18 +201,13 @@ const AppContent: React.FC = () => {
     
     document.title = (sectionName && sectionName !== 'Início') ? `Geniunm - ${sectionName}` : 'Geniunm - Treinamento de Consultores';
 
-    // Redirection logic based on user type and current path
     if (currentUser) {
         if (currentUser.tipo === 'admin') {
-             // Admin is logged in.
-            // If they are on a non-admin page (except Home, which is the login page itself, or their own admin panel),
-            // redirect them to the admin panel.
-            const isAdminSpecificPath = 
+             const isAdminSpecificPath = 
                 effectivePath === NavigationSection.AdminPanel ||
                 NAV_ITEMS.some(item => item.adminOnly && item.section === effectivePath);
-
-            if (!isAdminSpecificPath && effectivePath !== NavigationSection.Home /* allow admin to see login page if they logged out */) {
-                // navigate(`/${NavigationSection.AdminPanel}`, { replace: true });
+            if (!isAdminSpecificPath && effectivePath !== NavigationSection.Home) {
+                // navigate(`/${NavigationSection.AdminPanel}`, { replace: true }); // This was causing loops, review redirection
             }
         } else if (currentUser.tipo === 'consultor') {
             const isForbiddenAdminPath = NAV_ITEMS.some(item => item.adminOnly && item.section === effectivePath);
@@ -198,8 +215,7 @@ const AppContent: React.FC = () => {
                 navigate(`/${NavigationSection.Home}`, { replace: true });
             }
         }
-    } else { // No current user (logged out)
-        // If trying to access a protected route, redirect to home (login)
+    } else { 
         const isProtectedPath = NAV_ITEMS.some(item => 
             item.section !== NavigationSection.Home && 
             (effectivePath === item.section || effectivePath.startsWith(`${item.section}/`))
