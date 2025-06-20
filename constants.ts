@@ -7,7 +7,7 @@ export const SUPABASE_ERROR_MESSAGE = "Supabase URL ou Anon Key não configurado
 
 export const ADMIN_FIXED_PASSWORD = "fenix@2025";
 export const LOCAL_STORAGE_CURRENT_USER_KEY = 'geniunmCurrentUser';
-export const LOCAL_STORAGE_CONSULTANT_USERS_KEY = 'geniunmConsultantUsers';
+// LOCAL_STORAGE_CONSULTANT_USERS_KEY is removed as consultants are now in Supabase
 
 
 export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; // This can remain in localStorage
@@ -660,14 +660,12 @@ export const SIMULATION_HEADINGS = {
 };
 
 
-// For Admin Dashboard & User Management (Supabase based tables, local auth will use local storage keys)
 export const LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX = 'geniunmUserLastLogin_'; 
-// Quiz/Sim records can still go to Supabase, linked by local user ID (e.g. username)
 export const LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY = 'geniunmQuizAttempts'; 
 export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords'; 
 
-// Supabase table names (can still be used for data, not auth users)
-export const TABLE_USUARIOS = 'usuarios'; // This table might not be used for user profiles if auth is fully local
+// Supabase table names. 'usuarios' is now central for consultant profiles.
+export const TABLE_USUARIOS = 'usuarios'; 
 export const TABLE_SIMULACOES = 'simulacoes';
 export const TABLE_QUIZZES = 'quizzes';
 export const TABLE_FLASHCARDS = 'flashcards'; // If dynamic flashcards are implemented
