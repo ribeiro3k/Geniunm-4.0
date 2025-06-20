@@ -3,18 +3,21 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // AppUser: Represents the authenticated user within the application context
 export interface AppUser {
-  id: string; // Supabase user ID (auth.uid())
-  email: string | undefined;
-  nome: string; // From 'usuarios' table
-  tipo: 'admin' | 'consultor'; // From 'usuarios' table
-  avatarUrl?: string; // Optional, if you store it in 'usuarios' or user_metadata
+  id: string; // For local users, can be username or generated ID
+  nome: string; 
+  tipo: 'admin' | 'consultor';
+  password?: string; // Only for local consultant users, for validation
+  avatarUrl?: string; 
+  email?: string; // Kept for potential future use, but not central to local auth
 }
 export type CurrentUserType = AppUser | null;
 
-// Adding SimpleUserCredentials for the local storage based user management
+// SimpleUserCredentials for local consultant user management
 export interface SimpleUserCredentials {
-  username: string;
+  id?: string; // Optional local ID
+  username: string; // This will be 'nome' for consultants
   passwordPlainText: string;
+  tipo?: 'consultor'; // Default to consultant when creating
 }
 
 export interface FlashcardContent {
@@ -122,18 +125,18 @@ export interface Objection {
   context?: string; 
 }
 
-// User type for UserManagementPanel (creating new users)
+// User type for UserManagementPanel (creating new users) - Now for local storage
 export interface NewUserCredentials {
   nome: string;
-  email: string;
-  senhaPlainText: string; // Will be sent to Supabase, must be hashed server-side
-  tipo: 'admin' | 'consultor';
+  // email: string; // Email no longer primary for local auth
+  senhaPlainText: string; 
+  tipo: 'consultor'; // Admins are fixed, so only consultants created here
 }
 
 
 // Admin Panel Data Types
 export interface UserActivityData {
-  id: string; // Typically username or email
+  id: string; // username or local ID
   displayName: string;
   lastLogin?: string; // ISO Date string
   simulationsCompleted: number; // In selected period
@@ -143,14 +146,12 @@ export interface UserActivityData {
   totalActivities: number; // In selected period
 }
 
-// QuizAttemptRecord adjusted for Supabase
+// QuizAttemptRecord adjusted for local user ID
 export interface QuizAttemptRecord {
   id?: string; // Supabase will generate UUID, optional here
-  usuario_id: string; // Foreign key to usuarios.id
+  usuario_id: string; // Will be local user ID (e.g., username or generated local ID)
   titulo: string; // e.g., "Quiz Principal" or derived
-  criado_em?: string; // Supabase handles timestamp
-  // 'perguntas' (jsonb) will store QuizQuestionType[]
-  // 'resultado' (jsonb) will store { score: number, totalQuestions: number, answers: UserAnswer[] }
+  criado_em?: string; // Supabase handles timestamp, or can be local
   perguntas: QuizQuestionType[]; 
   resultado: {
     score: number;
@@ -199,24 +200,23 @@ export interface ParsedEvaluation {
     finalDevelopmentNote?: string | null; 
 }
 
-// SimulationRecord adjusted for Supabase
+// SimulationRecord adjusted for local user ID
 export interface SimulationRecord {
-  id?: string; // Supabase will generate UUID
-  usuario_id: string; // Foreign key to usuarios.id
+  id?: string; // Supabase will generate UUID, or can be local
+  usuario_id: string; // Will be local user ID
   titulo: string; // Scenario title
   categoria?: string; // Scenario topicTags or skillTags (optional)
-  // 'conteudo' (jsonb) will store { messages: Message[], evaluation: ParsedEvaluation | null, scenarioDetails: { id: string, behavioralProfile?: string } }
   conteudo: {
     messages: Message[];
     evaluation: ParsedEvaluation | null;
-    scenarioDetails: { // Storing some scenario context for later review if needed
-        id: string; // scenario.id used
+    scenarioDetails: { 
+        id: string; 
         behavioralProfile?: SimulatorBehavioralProfile;
     }
   };
-  nota?: number; // Optional: Overall score if applicable (0-5 or 0-10)
-  resumo_ia?: string; // Optional: AI's very brief summary of the interaction
-  criado_em?: string; // Supabase handles timestamp
+  nota?: number; 
+  resumo_ia?: string; 
+  criado_em?: string; // Supabase handles timestamp, or can be local
 }
 
 
@@ -254,7 +254,7 @@ export type ReportPeriod = 'allTime' | 'last7days' | 'last30days';
 export type ReportContentType = 'quizzes' | 'simulations'; 
 
 export interface ReportFilterConfig {
-  collaboratorId: string; // 'all' or specific user ID
+  collaboratorId: string; // 'all' or specific user ID (local user ID now)
   period: ReportPeriod;
   contentTypes: ReportContentType[]; 
 }
@@ -279,7 +279,7 @@ export interface ReportKPIs {
 }
 
 export interface ProcessedReportDataRow {
-  userId: string;
+  userId: string; // local user ID
   userName: string;
   totalActivities: number;
   quizAttempts: number;
