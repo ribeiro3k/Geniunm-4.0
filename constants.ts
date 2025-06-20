@@ -1,9 +1,14 @@
 
 
-import { QuizQuestionType, Scenario, NavItem, NavigationSection, Objection, SimulatorBehavioralProfile, ReportFilterConfig, ReportKPIs } from './types';
+import { QuizQuestionType, Scenario, NavItem, NavigationSection, Objection, SimulatorBehavioralProfile, ReportFilterConfig, ReportKPIs, SimpleUserCredentials } from './types';
 
 export const API_KEY_ERROR_MESSAGE = "API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY.";
-export const SUPABASE_ERROR_MESSAGE = "Configurações do Supabase ausentes. Verifique SUPABASE_URL e SUPABASE_ANON_KEY.";
+export const SUPABASE_ERROR_MESSAGE = "Supabase URL ou Anon Key não configurados. Verifique as variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY.";
+
+export const ADMIN_FIXED_PASSWORD = "fenix@2025";
+export const LOCAL_STORAGE_CURRENT_USER_KEY = 'geniunmCurrentUser';
+export const LOCAL_STORAGE_CONSULTANT_USERS_KEY = 'geniunmConsultantUsers';
+
 
 export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; // This can remain in localStorage
 
@@ -655,16 +660,18 @@ export const SIMULATION_HEADINGS = {
 };
 
 
-// For Admin Dashboard & User Management (Supabase based)
-export const LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX = 'geniunmUserLastLogin_'; // Can keep for last login if not stored in Supabase
-export const LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY = 'geniunmQuizAttempts'; // Still used by Admin/Collaborator Dashboard for local data, pending full Supabase migration
-export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords'; // Still used by Admin/Collaborator Dashboard, pending full Supabase migration
-// For old simple user system (if parts are still used, e.g. ReportsSection initial user list)
-export const LOCAL_STORAGE_SIMPLE_USERS_KEY = 'geniunmSimpleUsernames';
-export const LOCAL_STORAGE_SIMPLE_USERS_CREDENTIALS_KEY = 'geniunmSimpleUserCredentials';
-export const BASE_SIMPLE_USER_NAMES: string[] = ["ConsultorA", "ConsultorB", "ConsultorC", "ConsultorD", "ConsultorE"];
-export const DEFAULT_SIMPLE_USER_PASSWORD = "123";
+// For Admin Dashboard & User Management (Supabase based tables, local auth will use local storage keys)
+export const LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX = 'geniunmUserLastLogin_'; 
+// Quiz/Sim records can still go to Supabase, linked by local user ID (e.g. username)
+export const LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY = 'geniunmQuizAttempts'; 
+export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords'; 
 
+// Supabase table names (can still be used for data, not auth users)
+export const TABLE_USUARIOS = 'usuarios'; // This table might not be used for user profiles if auth is fully local
+export const TABLE_SIMULACOES = 'simulacoes';
+export const TABLE_QUIZZES = 'quizzes';
+export const TABLE_FLASHCARDS = 'flashcards'; // If dynamic flashcards are implemented
+export const TABLE_FEEDBACKS = 'feedbacks';   // If feedback system is implemented
 
 export const GEMINI_COMMERCIAL_MANAGER_ANALYSIS_PROMPT_TEMPLATE: string = `
 Você é um sistema de análise de performance de consultores de vendas. Seu papel é gerar um relatório conciso e direto sobre o desempenho do colaborador, com base nos dados da plataforma de treinamento.
@@ -720,10 +727,3 @@ export const DEFAULT_REPORT_KPIS: ReportKPIs = {
     fechamento: true,
   },
 };
-
-// Database table names (as per user's schema)
-export const TABLE_USUARIOS = 'usuarios';
-export const TABLE_SIMULACOES = 'simulacoes';
-export const TABLE_QUIZZES = 'quizzes';
-export const TABLE_FLASHCARDS = 'flashcards'; // If dynamic flashcards are implemented
-export const TABLE_FEEDBACKS = 'feedbacks';   // If feedback system is implemented
