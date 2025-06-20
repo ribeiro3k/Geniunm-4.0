@@ -1,13 +1,13 @@
 
-
 import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, Part } from "@google/genai";
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { GEMINI_SIMULATOR_PROMPT_TEMPLATE, API_KEY_ERROR_MESSAGE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-const API_KEY = import.meta.env.VITE_API_KEY;
+// Alterado para buscar a variável de process.env
+const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  console.error(API_KEY_ERROR_MESSAGE);
+  console.error(API_KEY_ERROR_MESSAGE); // A mensagem em constants.ts também será atualizada
   // alert(API_KEY_ERROR_MESSAGE); // Consider user-facing notification if not handled by UI
 }
 
