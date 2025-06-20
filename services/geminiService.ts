@@ -4,7 +4,7 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { GEMINI_SIMULATOR_PROMPT_TEMPLATE, API_KEY_ERROR_MESSAGE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-const API_KEY = process.env.API_KEY;
+const API_KEY = import.meta.env.VITE_API_KEY;
 
 if (!API_KEY) {
   console.error(API_KEY_ERROR_MESSAGE);
