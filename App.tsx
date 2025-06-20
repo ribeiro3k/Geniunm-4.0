@@ -114,7 +114,7 @@ const AppContent: React.FC = () => {
           id: 'admin_fixed_user',
           nome: 'Administrador',
           tipo: 'admin',
-          avatarUrl: '/logo.png' 
+          // avatarUrl: '/logo.png' // REMOVIDO
         };
         setCurrentUser(adminUser);
         localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(adminUser));
@@ -136,7 +136,7 @@ const AppContent: React.FC = () => {
       try {
         const { data: consultantData, error: fetchError } = await supabase
           .from(TABLE_USUARIOS)
-          .select('id, nome, email, tipo, password, avatarUrl, criado_em') // Fetch password for comparison
+          .select('id, nome, email, tipo, password, criado_em') // Removido avatarUrl da seleção
           .eq('nome', usernameOrAdminKeyword)
           .eq('tipo', 'consultor')
           .single();
@@ -154,7 +154,7 @@ const AppContent: React.FC = () => {
             nome: consultantData.nome,
             tipo: consultantData.tipo as 'consultor', // Ensure correct type
             email: consultantData.email,
-            avatarUrl: consultantData.avatarUrl,
+            // avatarUrl: consultantData.avatarUrl, // REMOVIDO
             criado_em: consultantData.criado_em,
           };
           setCurrentUser(consultantAppUser);
