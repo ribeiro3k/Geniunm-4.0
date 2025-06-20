@@ -8,7 +8,7 @@ export interface AppUser {
   tipo: 'admin' | 'consultor';
   // password field is removed from AppUser state to avoid storing it client-side after login.
   // It's only used during the login process and for creation/update.
-  avatarUrl?: string; 
+  // avatarUrl?: string; // REMOVIDO
   email?: string; // From Supabase 'usuarios' table
   criado_em?: string; // From Supabase 'usuarios' table
 }
@@ -65,7 +65,7 @@ export interface Message {
   timestamp: Date;
   senderDisplayName?: string;
   status?: 'pending_send' | 'sent' | 'delivered' | 'read' | 'error';
-  avatarUrl?: string; 
+  avatarUrl?: string; // Esta avatarUrl é para o avatar do cliente/IA na simulação, não do usuário logado. MANTER.
   isAudioMessage?: boolean; 
 }
 
@@ -90,7 +90,7 @@ export interface Scenario {
   context: string; 
   initialMessage: string; 
   behavioralProfile?: SimulatorBehavioralProfile;
-  avatarUrl?: string; 
+  avatarUrl?: string; // Esta avatarUrl é para o avatar do cliente/IA na simulação. MANTER.
   isBoss?: boolean;   
   topicTags?: string[]; 
   skillTags?: string[]; 
