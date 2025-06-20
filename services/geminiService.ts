@@ -3,15 +3,14 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { GEMINI_SIMULATOR_PROMPT_TEMPLATE, API_KEY_ERROR_MESSAGE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-// Alterado para buscar a variável de process.env
+// Acessar a API Key usando process.env.API_KEY
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  console.error(API_KEY_ERROR_MESSAGE); // A mensagem em constants.ts também será atualizada
-  // alert(API_KEY_ERROR_MESSAGE); // Consider user-facing notification if not handled by UI
+  console.error(API_KEY_ERROR_MESSAGE); 
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" });
+const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" }); // Passa a chave aqui
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
   if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
@@ -96,7 +95,6 @@ export async function startChatSession(
   
   const initialHistory: GeminiMessage[] = [];
   if (displayInitialAiMessageInChatUI && scenario.initialMessage) {
-    // User is consultant, AI is client, and AI client has an initial message to display.
     initialHistory.push({ role: 'model', parts: [{ text: scenario.initialMessage }] });
   }
 
@@ -108,8 +106,6 @@ export async function startChatSession(
     history: initialHistory.length > 0 ? initialHistory : undefined
   });
   
-  // In standard mode, if AI has an initial message, it's already in history or will be handled by UI.
-  // If `displayInitialAiMessageInChatUI` is false, it means user starts, so AI's first message isn't pre-determined.
   const firstAiMessage = displayInitialAiMessageInChatUI ? scenario.initialMessage : "";
 
 
@@ -140,7 +136,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: model,
       contents: [{ role: "user", parts: [{ text: GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT }] }],
-      config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } } // Slightly higher temp for creativity
+      config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } } 
     });
 
     const text = response.text;
@@ -197,7 +193,6 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
       context: context,
       initialMessage: parsedFields.INITIAL_MESSAGE_TO_CONSULTANT,
       behavioralProfile: behavioralProfile,
-      // avatarUrl and isBoss are typically not set by this procedural generation
     };
     
     return scenario;
@@ -266,7 +261,7 @@ export async function evaluateObjectionResponse(objectionText: string, userRespo
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-04-17',
       contents: [{role: 'user', parts: [{text: prompt}]}],
-      config: {} // Default config, no thinking budget specified for this specific call
+      config: {} 
     });
     return response.text;
   } catch (error) {
@@ -290,8 +285,6 @@ export async function generateCollaboratorAnalysis(
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-04-17',
       contents: [{ role: "user", parts: [{text: finalPrompt}] }],
-      // Consider if specific config is needed, e.g., temperature for more/less creative analysis
-      // config: { temperature: 0.5 } 
     });
     return response.text;
   } catch (error) {
