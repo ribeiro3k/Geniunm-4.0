@@ -9,16 +9,16 @@ export const ADMIN_FIXED_PASSWORD = "fenix@2025";
 export const LOCAL_STORAGE_CURRENT_USER_KEY = 'geniunmCurrentUser';
 
 
-export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; 
+export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt';
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "#/home", label: "Início", section: NavigationSection.Home, icon: "fa-home" },
   { href: "#/flashcards", label: "Flashcards", section: NavigationSection.Flashcards, icon: "fa-layer-group" },
   { href: "#/quiz", label: "Quiz", section: NavigationSection.Quiz, icon: "fa-question-circle" },
-  { 
-    href: `#/simulador`, 
-    label: "Simulador", 
-    section: NavigationSection.Simulador, 
+  {
+    href: `#/simulador`,
+    label: "Simulador",
+    section: NavigationSection.Simulador,
     icon: "fa-comments",
   },
   { href: "#/objection-trainer", label: "Treinar Objeções", section: NavigationSection.ObjectionTrainer, icon: "fa-microphone-alt" },
@@ -47,9 +47,9 @@ export const FLASHCARD_LOADING_MESSAGES: string[] = [
 ];
 
 export const AI_ANALYSIS_LOADING_MESSAGES: string[] = [
-    "Analisando dados do usuário...", 
-    "Verificando interações e desempenho...", 
-    "A IA está processando os insights...", 
+    "Analisando dados do usuário...",
+    "Verificando interações e desempenho...",
+    "A IA está processando os insights...",
     "Compilando relatório avançado...",
     "Quase pronto para revelar a análise..."
 ];
@@ -65,7 +65,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
       { id: 'q1_false', text: "Falso", correct: true },
     ],
     feedback: "Falso. A conversa deve começar com conexão e descoberta da necessidade. Nunca comece com o preço!",
-    topicTags: ["abordagem_inicial", "precificacao"], 
+    topicTags: ["abordagem_inicial", "precificacao"],
     skillTags: ["comunicacao_estrategica", "construcao_valor"]
   },
   {
@@ -80,7 +80,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
       { id: 'q2_opt4', text: "Mandar só “Oi, tudo bem?” como follow-up", correct: true },
     ],
     feedback: "Não se deve escrever textos longos e sem estratégia, nem mandar follow-ups genéricos como 'Oi, tudo bem?'. Áudios curtos e perguntas objetivas são boas práticas.",
-    topicTags: ["boas_praticas_whatsapp", "comunicacao_escrita", "follow_up"], 
+    topicTags: ["boas_praticas_whatsapp", "comunicacao_escrita", "follow_up"],
     skillTags: ["comunicacao_eficaz_whatsapp", "etiqueta_digital"]
   },
   {
@@ -158,7 +158,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
   {
     id: 8,
     text: "Preencha a lacuna: “O curso não é um ____, é um investimento no seu futuro.”",
-    type: 'multiple-choice', 
+    type: 'multiple-choice',
     options: [
       { id: 'q8_opt1', text: "Compromisso" },
       { id: 'q8_opt2', text: "Gasto", correct: true },
@@ -624,20 +624,20 @@ export const SIMULATION_HEADINGS = {
     FAILURE_HEADER: "❌ SIMULAÇÃO ENCERRADA: VENDA NÃO REALIZADA",
     FAILURE_QUICK_SUMMARY: "📉 RESUMO RÁPIDO",
     FAILURE_SECTION_1_ERRORS: "🚨 1. PRINCIPAIS ERROS QUE ATRAPALHARAM A VENDA",
-    FAILURE_SECTION_1_ERROR_ITEM_PREFIX: "Erro", 
+    FAILURE_SECTION_1_ERROR_ITEM_PREFIX: "Erro",
     FAILURE_SECTION_2_POSITIVE: "✅ 2. PONTO POSITIVO (Se houver)",
     FAILURE_SECTION_5_WHAT_FAILED: "🧭 5. O QUE FALHOU NA CONVERSA (Resumo Técnico)",
     FAILURE_SECTION_6_HOW_TO_IMPROVE: "💡 6. COMO MELHORAR: PASSOS PRÁTICOS",
 
     SUCCESS_HEADER: "🎉 PARABÉNS! VENDA REALIZADA COM SUCESSO! 🎉",
-    SUCCESS_BOSS_CONVINCED: "👑 VOCÊ CONVENCEU O CHEFÃO FLÁVIO! 👑", 
+    SUCCESS_BOSS_CONVINCED: "👑 VOCÊ CONVENCEU O CHEFÃO FLÁVIO! 👑",
     SUCCESS_QUICK_SUMMARY: "📈 RESUMO RÁPIDO",
     SUCCESS_SECTION_1_HITS: "✅ 1. PRINCIPAIS ACERTOS QUE GARANTIRAM A VENDA",
-    SUCCESS_SECTION_1_HIT_ITEM_PREFIX: "Acerto", 
+    SUCCESS_SECTION_1_HIT_ITEM_PREFIX: "Acerto",
     SUCCESS_SECTION_2_ATTENTION: "⚠️ 2. PONTO DE ATENÇÃO (Se houver)",
     SUCCESS_SECTION_5_WHAT_WORKED: "🧭 5. O QUE FUNCIONOU NA CONVERSA (Resumo Técnico)",
     SUCCESS_SECTION_6_TIPS_FOR_SUCCESS: "💡 6. DICAS PARA MANTER O SUCESSO",
-    
+
     CLIENT_INFO_NAME: "Nome:",
     CLIENT_INFO_COURSE: "Curso:",
     CLIENT_INFO_LIFE: "Vida:",
@@ -647,21 +647,21 @@ export const SIMULATION_HEADINGS = {
 
     CONVERSATION_ANALYSIS_KNOWLEDGE: "Conhecimento dos cursos:",
     CONVERSATION_ANALYSIS_LISTENING: "Escuta ativa:",
-    CONVERSATION_ANALYSIS_OBJECTIONS: "Contorno de dúvidas:", 
+    CONVERSATION_ANALYSIS_OBJECTIONS: "Contorno de dúvidas:",
     CONVERSATION_ANALYSIS_DIFFERENTIALS: "Apresentação dos diferenciais:",
     CONVERSATION_ANALYSIS_CLOSING: "Fechamento:",
 };
 
 
-export const LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX = 'geniunmUserLastLogin_'; 
-export const LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY = 'geniunmQuizAttempts'; 
-export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords'; 
+export const LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX = 'geniunmUserLastLogin_';
+export const LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY = 'geniunmQuizAttempts';
+export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords';
 
-export const TABLE_USUARIOS = 'usuarios'; 
+export const TABLE_USUARIOS = 'usuarios'; // Reflete a tabela no Supabase
 export const TABLE_SIMULACOES = 'simulacoes';
 export const TABLE_QUIZZES = 'quizzes';
-export const TABLE_FLASHCARDS = 'flashcards'; 
-export const TABLE_FEEDBACKS = 'feedbacks';   
+export const TABLE_FLASHCARDS = 'flashcards'; // Supondo que você possa querer salvar flashcards gerados no futuro
+export const TABLE_FEEDBACKS = 'feedbacks';   // Supondo que você possa querer salvar feedbacks das simulações
 
 export const GEMINI_COMMERCIAL_MANAGER_ANALYSIS_PROMPT_TEMPLATE: string = `
 Você é um sistema de análise de performance de consultores de vendas. Seu papel é gerar um relatório conciso e direto sobre o desempenho do colaborador, com base nos dados da plataforma de treinamento.
@@ -704,15 +704,16 @@ export const DEFAULT_REPORT_KPIS: ReportKPIs = {
   quizAverageScore: true,
   quizHighestScore: false,
   quizLowestScore: false,
-  quizTopicAnalysis: true, 
+  quizTopicAnalysis: true,
   simulationAttempts: true,
   simulationSuccessRate: true,
-  simulationSkillSummary: true, 
-  simulationAverageStars: { 
-    enabled: true, 
+  simulationSkillSummary: true,
+  simulationAverageStars: {
+    enabled: true,
     acolhimento: true,
     clareza: true,
     argumentacao: true,
     fechamento: true,
   },
 };
+
