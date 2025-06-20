@@ -24,9 +24,10 @@ const FlashcardSection: React.FC = () => {
 
   useEffect(() => {
     tempDivRef.current = document.createElement('div');
+    // Alterado para buscar a variável de process.env
     if (!process.env.API_KEY) {
       setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE);
+      setError(API_KEY_ERROR_MESSAGE); // A mensagem em constants.ts já foi atualizada
       setCurrentCard({
         id: 'flashcard_error_config_apikey',
         front: "Erro de Configuração",
