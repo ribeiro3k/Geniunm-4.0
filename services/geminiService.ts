@@ -1,16 +1,16 @@
 
 import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, Part } from "@google/genai";
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
-import { GEMINI_SIMULATOR_PROMPT_TEMPLATE, API_KEY_ERROR_MESSAGE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
+import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
 // Acessar a API Key usando process.env.API_KEY
-const API_KEY = process.env.VITE_API_KEY;
+const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  console.error(API_KEY_ERROR_MESSAGE); 
+  console.error(API_KEY_ERROR_MESSAGE);
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" }); // Passa a chave aqui
+const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" });
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
   if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
@@ -80,7 +80,7 @@ export async function generateFlashcardFromGemini(theme: string): Promise<Flashc
 
 
 export async function startChatSession(
-  scenario: Scenario, 
+  scenario: Scenario,
   displayInitialAiMessageInChatUI: boolean
 ): Promise<{chat: Chat; initialAiMessage: string}> {
   if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
@@ -92,7 +92,7 @@ export async function startChatSession(
   systemInstruction = systemInstruction.replace(/{SCENARIO_CONTEXT}/g, scenario.context || "Contexto geral de um aluno interessado em EAD.");
   systemInstruction = systemInstruction.replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "Interesse geral em cursos EAD.");
   systemInstruction = systemInstruction.replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
-  
+
   const initialHistory: GeminiMessage[] = [];
   if (displayInitialAiMessageInChatUI && scenario.initialMessage) {
     initialHistory.push({ role: 'model', parts: [{ text: scenario.initialMessage }] });
@@ -105,7 +105,7 @@ export async function startChatSession(
     },
     history: initialHistory.length > 0 ? initialHistory : undefined
   });
-  
+
   const firstAiMessage = displayInitialAiMessageInChatUI ? scenario.initialMessage : "";
 
 
@@ -136,7 +136,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: model,
       contents: [{ role: "user", parts: [{ text: GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT }] }],
-      config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } } 
+      config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } }
     });
 
     const text = response.text;
@@ -151,9 +151,9 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
         parsedFields[key] = value;
       }
     });
-    
+
     const requiredFields = [
-        "LEAD_NAME", "LEAD_AGE_APPROX", "LEAD_CURRENT_SITUATION", 
+        "LEAD_NAME", "LEAD_AGE_APPROX", "LEAD_CURRENT_SITUATION",
         "COURSE_OF_INTEREST", "LEAD_PRIMARY_MOTIVATION", "LEAD_KEY_CONCERN_OR_DOUBT",
         "LEAD_SUBTLE_PAIN_POINT", "LEAD_SOURCE_HINT", "INITIAL_MESSAGE_TO_CONSULTANT",
         "BEHAVIORAL_PROFILE"
@@ -165,7 +165,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
             throw new Error(`Formato de cenário procedural inválido: campo ${field} ausente.`);
         }
     }
-    
+
     const title = `${parsedFields.LEAD_NAME} (${parsedFields.COURSE_OF_INTEREST})`;
     const contextParts = [
         `Nome: ${parsedFields.LEAD_NAME}, ${parsedFields.LEAD_AGE_APPROX} anos.`,
@@ -194,12 +194,12 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
       initialMessage: parsedFields.INITIAL_MESSAGE_TO_CONSULTANT,
       behavioralProfile: behavioralProfile,
     };
-    
+
     return scenario;
 
   } catch (error) {
     console.error('Erro ao gerar cenário procedural com Gemini:', error);
-    throw error; 
+    throw error;
   }
 }
 
@@ -261,7 +261,7 @@ export async function evaluateObjectionResponse(objectionText: string, userRespo
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-04-17',
       contents: [{role: 'user', parts: [{text: prompt}]}],
-      config: {} 
+      config: {}
     });
     return response.text;
   } catch (error) {
