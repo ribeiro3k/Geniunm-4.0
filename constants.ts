@@ -1,16 +1,15 @@
 
 import { QuizQuestionType, Scenario, NavItem, NavigationSection, Objection, SimulatorBehavioralProfile, ReportFilterConfig, ReportKPIs, SimpleUserCredentials } from './types';
 
-// Mensagem de erro atualizada para process.env.API_KEY
+// Mensagem de erro atualizada para API_KEY
 export const API_KEY_ERROR_MESSAGE = "API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY.";
 export const SUPABASE_ERROR_MESSAGE = "Supabase URL ou Anon Key não configurados. Verifique as variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY.";
 
 export const ADMIN_FIXED_PASSWORD = "fenix@2025";
 export const LOCAL_STORAGE_CURRENT_USER_KEY = 'geniunmCurrentUser';
-// LOCAL_STORAGE_CONSULTANT_USERS_KEY is removed as consultants are now in Supabase
 
 
-export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; // This can remain in localStorage
+export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; 
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "#/home", label: "Início", section: NavigationSection.Home, icon: "fa-home" },
@@ -159,7 +158,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
   {
     id: 8,
     text: "Preencha a lacuna: “O curso não é um ____, é um investimento no seu futuro.”",
-    type: 'multiple-choice', // fill-in-the-blank presented as MC
+    type: 'multiple-choice', 
     options: [
       { id: 'q8_opt1', text: "Compromisso" },
       { id: 'q8_opt2', text: "Gasto", correct: true },
@@ -318,7 +317,6 @@ export const FLAVIO_BOSS_SCENARIO: Scenario = {
   context: 'Flávio é o fundador e proprietário da instituição (Geniunm/Cruzeiro do Sul Virtual, dependendo de como o consultor se apresentar). Ele está testando secretamente a qualidade do atendimento. Extremamente ocupado, cético, direto e muito difícil de convencer. Ele valoriza respostas rápidas, precisas e que demonstrem profundo conhecimento e confiança. Qualquer hesitação ou erro será notado. Ele age como um chefe avaliando um funcionário.',
   initialMessage: 'Seja rápido. O que você quer?',
   behavioralProfile: 'Flávio - O Chefão',
-  // avatarUrl: '/flavio-boss.jpg', // Avatar URL removido
   isBoss: true,
   topicTags: ["atendimento_dificil", "teste_qualidade", "geral_vendas", "pressao"],
   skillTags: ["resiliencia", "confianca", "comunicacao_assertiva", "conhecimento_produto_profundo", "gestao_stress"]
@@ -342,7 +340,6 @@ export const OBJECTIONS_LIST: Objection[] = [
   { id: 'ja_tenho_formacao', text: "Já tenho uma graduação, não sei se outra vai agregar.", context: "O lead já possui um diploma e questiona o valor de uma nova formação ou pós." }
 ];
 
-// Template do PROMPT MESTRE para o Gemini - Atualizado
 export const GEMINI_SIMULATOR_PROMPT_TEMPLATE: string = `
 **Você é um Agente de Simulação Avançado e de Alto Nível.** Sua tarefa é atuar como um potencial cliente interessado em um curso EAD da **Cruzeiro do Sul Virtual**, interagindo com um vendedor (o usuário desta plataforma Geniunm). Sua performance será baseada em uma persona específica e em um conjunto de regras e comportamentos detalhados abaixo, refletindo um conhecimento profundo do que um consultor da Cruzeiro do Sul Virtual deveria saber.
 
@@ -554,7 +551,7 @@ LEAD_PRIMARY_MOTIVATION: [Principal razão específica para o lead buscar ESTE c
 LEAD_KEY_CONCERN_OR_DOUBT: [Uma preocupação ou dúvida específica e plausível que o lead tem em relação ao curso ou modalidade EAD (ex: "Orçamento apertado.", "Qualidade do EAD vs. presencial.", "Conciliar estudos com rotina.", "Peso do diploma EAD no mercado.", "Medo de não ter disciplina."). Deve ser algo que o consultor precisará abordar. Esta informação é para o seu conhecimento interno como lead. Não a revele proativamente ao consultor.]
 LEAD_SUBTLE_PAIN_POINT: [Uma dor, frustração ou desejo secundário, mais implícito, que o curso poderia ajudar a resolver (ex: "Sentimento de estagnação profissional.", "Ansiedade por independência financeira.", "Cansaço da rotina atual.", "Habilidades se tornando obsoletas.", "Sonho de maior flexibilidade."). Adicione profundidade à persona. Esta informação é para o seu conhecimento interno como lead. Não a revele proativamente ao consultor.]
 LEAD_SOURCE_HINT: [Uma pista SUTIL sobre como o lead provavelmente chegou até a Cruzeiro do Sul Virtual (ex: "Viu um anúncio no Instagram sobre flexibilidade.", "Pesquisou no Google por 'melhor EAD de Administração'.", "Um colega de trabalho indicou.", "Recebeu um e-mail sobre bolsas."). Não diga explicitamente "Lead do Facebook", mas dê a entender a origem. Esta informação é para o seu conhecimento interno como lead. Não a revele proativamente ao consultor.]
-INITIAL_MESSAGE_TO_CONSULTANT: [A PRIMEIRA mensagem que este lead enviaria ao consultor. Para leads de mídias sociais (Facebook, Instagram), a mensagem inicial deve ser particularmente CURTA e VAGA (ex: 'Oi, quero saber mais', 'Info sobre o curso de X', 'Preço?', 'Olá', 'Vi um anúncio...'). O lead NÃO DEVE revelar muitos detalhes ou o curso exato de interesse imediatamente, a menos que o consultor o estimule de forma eficaz. Para outras origens, a mensagem pode ser um pouco mais direta, mas ainda assim, evite entregar todas as informações de bandeja. O objetivo é testar a capacidade do consultor de sondagem e rapport. A mensagem deve ser NATURAL e CONCISA.]
+INITIAL_MESSAGE_TO_CONSULTANT: [A PRIMEIRA mensagem que este lead enviaria ao consultor. Para leads de mídias sociais (Facebook, Instagram), a mensagem inicial deve ser particularmente CURTA e VAGA (ex: 'Oi, quero saber mais', 'Info sobre o curso de X', 'Preço?', 'Olá', 'Vi um anúncio...'). O lead NÃO DEVE revelar muitos detalhes ou o curso exato de interesse immunoblot, a menos que o consultor o estimule de forma eficaz. Para outras origens, a mensagem pode ser um pouco mais direta, mas ainda assim, evite entregar todas as informações de bandeja. O objetivo é testar a capacidade do consultor de sondagem e rapport. A mensagem deve ser NATURAL e CONCISA.]
 BEHAVIORAL_PROFILE: [Escolha UM dos seguintes perfis comportamentais para a IA simular: Questionador Detalhista, Ocupado/Impaciente, Desconfiado/Silencioso, Confuso/Indeciso, Comparador, Padrão.]
 
 Instrução Geral de Dificuldade e Realismo:
@@ -620,31 +617,27 @@ Analise CRITICAMENTE a resposta do consultor à objeção. Forneça um feedback 
 
 
 export const SIMULATION_HEADINGS = {
-    // Common
     REPORTS_SECTION_3_NOTES: "🔍 3. NOTAS GERAIS DO ATENDIMENTO",
     REPORTS_SECTION_4_CLIENT_INFO: "👩‍💼 4. SOBRE A CLIENTE",
     REPORTS_SECTION_7_FINAL_SUMMARY: "📌 7. RESUMO FINAL",
 
-    // Failure specific
     FAILURE_HEADER: "❌ SIMULAÇÃO ENCERRADA: VENDA NÃO REALIZADA",
     FAILURE_QUICK_SUMMARY: "📉 RESUMO RÁPIDO",
     FAILURE_SECTION_1_ERRORS: "🚨 1. PRINCIPAIS ERROS QUE ATRAPALHARAM A VENDA",
-    FAILURE_SECTION_1_ERROR_ITEM_PREFIX: "Erro", // For "Erro 1 –", "Erro 2 –"
+    FAILURE_SECTION_1_ERROR_ITEM_PREFIX: "Erro", 
     FAILURE_SECTION_2_POSITIVE: "✅ 2. PONTO POSITIVO (Se houver)",
     FAILURE_SECTION_5_WHAT_FAILED: "🧭 5. O QUE FALHOU NA CONVERSA (Resumo Técnico)",
     FAILURE_SECTION_6_HOW_TO_IMPROVE: "💡 6. COMO MELHORAR: PASSOS PRÁTICOS",
 
-    // Success specific
     SUCCESS_HEADER: "🎉 PARABÉNS! VENDA REALIZADA COM SUCESSO! 🎉",
-    SUCCESS_BOSS_CONVINCED: "👑 VOCÊ CONVENCEU O CHEFÃO FLÁVIO! 👑", // Sub-string
+    SUCCESS_BOSS_CONVINCED: "👑 VOCÊ CONVENCEU O CHEFÃO FLÁVIO! 👑", 
     SUCCESS_QUICK_SUMMARY: "📈 RESUMO RÁPIDO",
     SUCCESS_SECTION_1_HITS: "✅ 1. PRINCIPAIS ACERTOS QUE GARANTIRAM A VENDA",
-    SUCCESS_SECTION_1_HIT_ITEM_PREFIX: "Acerto", // For "Acerto 1 –", "Acerto 2 –"
+    SUCCESS_SECTION_1_HIT_ITEM_PREFIX: "Acerto", 
     SUCCESS_SECTION_2_ATTENTION: "⚠️ 2. PONTO DE ATENÇÃO (Se houver)",
     SUCCESS_SECTION_5_WHAT_WORKED: "🧭 5. O QUE FUNCIONOU NA CONVERSA (Resumo Técnico)",
     SUCCESS_SECTION_6_TIPS_FOR_SUCCESS: "💡 6. DICAS PARA MANTER O SUCESSO",
     
-    // Used for parsing fields within sections 4 and 5
     CLIENT_INFO_NAME: "Nome:",
     CLIENT_INFO_COURSE: "Curso:",
     CLIENT_INFO_LIFE: "Vida:",
@@ -654,7 +647,7 @@ export const SIMULATION_HEADINGS = {
 
     CONVERSATION_ANALYSIS_KNOWLEDGE: "Conhecimento dos cursos:",
     CONVERSATION_ANALYSIS_LISTENING: "Escuta ativa:",
-    CONVERSATION_ANALYSIS_OBJECTIONS: "Contorno de dúvidas:", // Could also be "Contorno de dúvidas/objeções:" for success
+    CONVERSATION_ANALYSIS_OBJECTIONS: "Contorno de dúvidas:", 
     CONVERSATION_ANALYSIS_DIFFERENTIALS: "Apresentação dos diferenciais:",
     CONVERSATION_ANALYSIS_CLOSING: "Fechamento:",
 };
@@ -664,12 +657,11 @@ export const LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX = 'geniunmUserLastLogin_';
 export const LOCAL_STORAGE_QUIZ_ATTEMPTS_KEY = 'geniunmQuizAttempts'; 
 export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords'; 
 
-// Supabase table names. 'usuarios' is now central for consultant profiles.
 export const TABLE_USUARIOS = 'usuarios'; 
 export const TABLE_SIMULACOES = 'simulacoes';
 export const TABLE_QUIZZES = 'quizzes';
-export const TABLE_FLASHCARDS = 'flashcards'; // If dynamic flashcards are implemented
-export const TABLE_FEEDBACKS = 'feedbacks';   // If feedback system is implemented
+export const TABLE_FLASHCARDS = 'flashcards'; 
+export const TABLE_FEEDBACKS = 'feedbacks';   
 
 export const GEMINI_COMMERCIAL_MANAGER_ANALYSIS_PROMPT_TEMPLATE: string = `
 Você é um sistema de análise de performance de consultores de vendas. Seu papel é gerar um relatório conciso e direto sobre o desempenho do colaborador, com base nos dados da plataforma de treinamento.
@@ -700,7 +692,6 @@ Ao final da análise dos aspectos, inclua:
 **Relatório de Performance:**
 `;
 
-// Report Section Default Configs
 export const DEFAULT_REPORT_FILTER_CONFIG: ReportFilterConfig = {
   collaboratorId: 'all',
   period: 'allTime',
