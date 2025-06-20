@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { QuizQuestionType, UserAnswer, AppUser, QuizAttemptRecord as AppQuizAttemptRecord } from '../../types';
-import { QUIZ_QUESTIONS, TABLE_QUIZZES } from '../../constants';
+import { QUIZ_QUESTIONS, TABLE_QUIZZES, SUPABASE_ERROR_MESSAGE } from '../../constants';
 import QuizQuestionDisplay from './QuizQuestionDisplay';
 import QuizResults from './QuizResults';
 import GlassButton from '../ui/GlassButton'; 
@@ -77,16 +76,14 @@ const QuizSection: React.FC<QuizSectionProps> = ({ currentUser }) => {
       setAnswerSubmittedForCurrent(false); 
     } else {
       const finalScore = await calculateScoreAndSave();
-      if (finalScore !== null) { // Check if saving was successful
-          setScore(finalScore);
-          setShowResults(true);
-      } else {
-        // Error already set by calculateScoreAndSave
-      }
+      // Always show results, even if saving failed.
+      // The score calculated is local.
+      setScore(finalScore);
+      setShowResults(true);
     }
   };
 
-  const calculateScoreAndSave = async (): Promise<number | null> => {
+  const calculateScoreAndSave = async (): Promise<number> => {
     setSaveError(null);
     let currentScore = 0;
     userAnswers.forEach(ua => {
@@ -95,7 +92,12 @@ const QuizSection: React.FC<QuizSectionProps> = ({ currentUser }) => {
       }
     });
 
-    if (currentUser && supabase) {
+    if (!supabase) {
+        setSaveError(`Não foi possível salvar o resultado: ${SUPABASE_ERROR_MESSAGE}`);
+        return currentScore; // Return local score
+    }
+    
+    if (currentUser) {
       const attemptToSave: Omit<AppQuizAttemptRecord, 'id' | 'criado_em'> = {
         usuario_id: currentUser.id,
         titulo: `Quiz de Conhecimento (${new Date().toLocaleDateString()})`, 
@@ -111,16 +113,18 @@ const QuizSection: React.FC<QuizSectionProps> = ({ currentUser }) => {
         const { error } = await supabase.from(TABLE_QUIZZES).insert([attemptToSave]);
         if (error) {
           console.error("Failed to save quiz attempt to Supabase:", error);
-          setSaveError(`Falha ao salvar o resultado do quiz: ${error.message}`);
-          return null; // Indicate failure
+          setSaveError(`Falha ao salvar o resultado do quiz no banco de dados: ${error.message}. Seu resultado local ainda será exibido.`);
+          // Return local score even if save fails
         }
       } catch (e) {
         console.error("Exception saving quiz attempt:", e);
-        setSaveError(`Exceção ao salvar o resultado: ${(e as Error).message}`);
-        return null; // Indicate failure
+        setSaveError(`Exceção ao salvar o resultado: ${(e as Error).message}. Seu resultado local ainda será exibido.`);
+        // Return local score even if save fails
       }
+    } else {
+        setSaveError("Usuário não autenticado. O resultado não será salvo.");
     }
-    return currentScore;
+    return currentScore; // Return local score
   };
 
   const restartQuiz = () => {
@@ -166,7 +170,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ currentUser }) => {
     <section id="quiz" className="py-12 mt-8">
       <GlassCard className="max-w-4xl mx-auto p-6 md:p-8">
         <h2 className="section-title">Quiz de Conhecimento</h2>
-         {saveError && (
+         {saveError && !showResults && ( // Show save error here if not yet on results page
             <p className="text-center text-sm text-[var(--error)] mb-4 p-2 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.2)] rounded-md">
               {saveError}
             </p>
@@ -191,7 +195,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ currentUser }) => {
             <GlassButton 
                 onClick={handleNextAction}
                 className="px-6 py-3 w-full md:w-auto"
-                disabled={isLoading} // Disable if still processing previous save, though unlikely here
+                disabled={isLoading} 
             >
                 {isLoading ? <LoadingSpinner size="sm"/> : (currentQuestionIndex === questions.length - 1 ? 'Ver Resultados' : 'Próxima Pergunta')}
             </GlassButton>
