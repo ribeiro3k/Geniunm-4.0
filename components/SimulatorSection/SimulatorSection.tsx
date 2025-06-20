@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chat } from '@google/genai';
 import { Message, Scenario, Objection, SimulatorBehavioralProfile, AppUser, SimulationRecord as AppSimulationRecord, ParsedEvaluation as ParsedEvaluationType, ParsedErrorOrSuccessItem } from '../../types';
-import { SIMULATOR_SCENARIOS, API_KEY_ERROR_MESSAGE, OBJECTIONS_LIST, FLAVIO_BOSS_SCENARIO, SIMULATION_HEADINGS, TABLE_SIMULACOES } from '../../constants';
+import { SIMULATOR_SCENARIOS, API_KEY_ERROR_MESSAGE, OBJECTIONS_LIST, FLAVIO_BOSS_SCENARIO, SIMULATION_HEADINGS, TABLE_SIMULACOES, SUPABASE_ERROR_MESSAGE } from '../../constants';
 import { startChatSession, sendChatMessage, transcribeAudioWithGemini, generateProceduralLeadScenarioFromGemini } from '../../services/geminiService';
 import MessageBubble from './MessageBubble';
 import AudioControls from './AudioControls';
@@ -504,7 +504,11 @@ const _displayAiMessageProgressively = useCallback((
   };
 
   const handleStartSimulation = async () => {
-    if (!apiKeyAvailable || isGeneratingScenario || isLoadingAI || !supabase) return;
+    if (!apiKeyAvailable || isGeneratingScenario || isLoadingAI) return;
+     if (!supabase && simulationMode === "completo") { // Only block if Supabase is needed and not available
+        setError(`Não foi possível iniciar a simulação: ${SUPABASE_ERROR_MESSAGE}. O modo "Foco em Objeção" pode funcionar offline.`);
+        return;
+    }
     
     resetSimulationStates(); 
 
@@ -791,7 +795,9 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
         const parsedData = parseEvaluationResult(aiResponseText); 
         setParsedEvaluation(parsedData);
 
-        if (currentUser && currentScenario && parsedData && supabase) {
+        if (!supabase) {
+            setSaveError(`Não foi possível salvar a simulação: ${SUPABASE_ERROR_MESSAGE}`);
+        } else if (currentUser && currentScenario && parsedData) {
           const simulationToSave: Omit<AppSimulationRecord, 'id' | 'criado_em'> = {
             usuario_id: currentUser.id,
             titulo: currentScenario.title,
@@ -801,19 +807,20 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
               evaluation: parsedData,
               scenarioDetails: { id: currentScenario.id, behavioralProfile: currentScenario.behavioralProfile }
             },
-            // nota: can be derived from parsedData.generalNotes if needed, or a specific overall score from IA
-            // resumo_ia: parsedData.quickSummary, // Or a more dedicated brief summary if IA provides one
           };
           try {
             const { error: dbError } = await supabase.from(TABLE_SIMULACOES).insert([simulationToSave]);
             if (dbError) {
               console.error("Failed to save simulation record to Supabase:", dbError);
-              setSaveError(`Falha ao salvar simulação: ${dbError.message}`);
+              setSaveError(`Falha ao salvar simulação no banco de dados: ${dbError.message}. Seus resultados ainda serão exibidos localmente.`);
             }
           } catch (e) {
             console.error("Exception saving simulation record:", e);
-            setSaveError(`Exceção ao salvar simulação: ${(e as Error).message}`);
+            setSaveError(`Exceção ao salvar simulação: ${(e as Error).message}. Seus resultados ainda serão exibidos localmente.`);
           }
+        } else {
+            if (!currentUser) setSaveError("Usuário não autenticado. A simulação não será salva.");
+            // other conditions for not saving (currentScenario or parsedData missing) are less likely if we reach here.
         }
 
         setSimulationActive(false); setIsLoadingAI(false); setIsAiTypingChunks(false);
@@ -979,7 +986,7 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
                   <GlassButton 
                     onClick={mainButtonAction} 
                     className="themed-button px-6 py-2.5 text-md w-full sm:w-auto max-w-xs"
-                    disabled={!apiKeyAvailable || isLoadingAI || isGeneratingScenario || (simulationMode === "objecao" && !selectedObjectionForMode) || !supabase}
+                    disabled={!apiKeyAvailable || isLoadingAI || isGeneratingScenario || (simulationMode === "objecao" && !selectedObjectionForMode) || (!supabase && simulationMode === "completo")}
                   >
                     {(isLoadingAI || isGeneratingScenario) ? <LoadingSpinner size="sm" /> : 
                         <> {mainButtonIcon && <i className={`fas ${mainButtonIcon} mr-2`}></i>} {mainButtonText} </>
@@ -988,7 +995,7 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
                 </div> 
             </div>
               {(error || saveError) && <p className="text-[var(--error)] text-center mt-6 p-2 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.2)] rounded-md text-sm">{error || saveError}</p>}
-              {!supabase && <p className="text-[var(--error)] text-center mt-4 text-xs">Supabase não configurado. Funcionalidades limitadas.</p>}
+              {!supabase && simulationMode === 'completo' && <p className="text-[var(--error)] text-center mt-4 text-xs">Supabase não configurado. O salvamento de simulações no modo completo está desabilitado.</p>}
             </div> </GlassCard> </section> ); }
 
   const rootSectionClass = `py-0 ${isSmallScreenEndView ? 'flex flex-col flex-grow h-full' : 'md:py-8'}`;
@@ -1202,7 +1209,7 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
                 aria-live="polite" aria-atomic="false" >
                 {messages.map((msg, index) => ( <MessageBubble key={msg.id} message={msg} /> ))} </div>
               {(error || saveError) && !parsedEvaluation && <p className="text-[var(--error)] text-center p-2 bg-[rgba(var(--error-rgb),0.1)] border-t border-[rgba(var(--error-rgb),0.2)] text-sm">{error || saveError}</p>}
-              {!supabase && <p className="text-[var(--error)] text-center p-1 bg-[rgba(var(--error-rgb),0.1)] text-xs">Supabase não configurado. Funcionalidades de salvamento desabilitadas.</p>}
+              {!supabase && simulationMode === 'completo' && !parsedEvaluation && <p className="text-[var(--error)] text-center p-1 bg-[rgba(var(--error-rgb),0.1)] text-xs">Supabase não configurado. O salvamento de simulações no modo completo está desabilitado.</p>}
               <ChatInputArea inputValue={inputValue} onInputChange={setInputValue} onSendMessage={() => handleSendMessage()}
                   isLoadingAI={isLoadingAI && !isAiTypingChunks} isAiTypingChunks={isAiTypingChunks} simulationActive={simulationActive}
                   isRecording={isRecording} isTranscribing={isTranscribing} onStartRecord={handleStartRecording} onStopRecord={handleStopRecording}
