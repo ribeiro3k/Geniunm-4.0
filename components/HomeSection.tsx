@@ -141,9 +141,7 @@ const HomeSection: React.FC<HomeSectionProps> = ({
   const welcomeNavItems = NAV_ITEMS.filter(item => 
     item.section !== NavigationSection.Home && 
     (!item.adminOnly || (item.adminOnly && currentUser?.tipo === 'admin')) &&
-    item.icon && // Ensure item has an icon to display
-    // For admin, only show adminOnly items on the home page.
-    // For consultant, show non-adminOnly items.
+    item.icon && 
     (currentUser?.tipo === 'admin' ? item.adminOnly : !item.adminOnly)
   );
 
@@ -151,7 +149,12 @@ const HomeSection: React.FC<HomeSectionProps> = ({
   return (
     <section id="home" className="py-8">
       <GlassCard className="text-center p-6 md:p-10">
-        <img src={currentUser.avatarUrl || "/logo.png"} alt={currentUser.avatarUrl ? "Avatar do Usuário" : "Geniunm Logo"} className={`w-24 h-24 mx-auto mb-4 ${currentUser.avatarUrl ? 'rounded-full object-cover' : ''}`} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo.png';}} />
+        <img 
+            src="/logo.png" 
+            alt="Geniunm Logo" 
+            className="w-24 h-24 mx-auto mb-4" 
+            onError={(e) => { e.currentTarget.style.display = 'none';}} 
+        />
         <h1 className="section-title !text-3xl md:!text-4xl !text-center !border-b-0">
           Olá, {currentUser.nome || 'Usuário'}!
         </h1>
