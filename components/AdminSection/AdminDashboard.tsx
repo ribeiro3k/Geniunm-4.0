@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AppUser, UserActivityData, QuizAttemptRecord as AppQuizAttemptRecord, SimulationRecord as AppSimulationRecord, NavigationSection, OverallPerformanceStats, ParsedEvaluation } from '../../types';
 import GlassCard from '../ui/GlassCard';
 import GlassButton from '../ui/GlassButton';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX, TABLE_QUIZZES, TABLE_SIMULACOES, TABLE_USUARIOS } from '../../constants';
+import { LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX, TABLE_QUIZZES, TABLE_SIMULACOES, TABLE_USUARIOS, SUPABASE_ERROR_MESSAGE } from '../../constants';
 import { formatDate } from '../../lib/utils'; 
 import { supabase } from '../../lib/supabaseClient';
 
@@ -73,6 +72,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [filterUser, setFilterUser] = useState<string>('');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('allTime');
+  const [fetchError, setFetchError] = useState<string | null>(null);
     
   const [isKpiModalOpen, setIsKpiModalOpen] = useState(false);
   const [kpiModalContent, setKpiModalContent] = useState({ title: '', summary: '' });
@@ -80,11 +80,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
 
   const fetchData = useCallback(async () => {
     if (!supabase) {
-        console.error("Supabase client not available.");
+        console.error("Supabase client not available for AdminDashboard.");
+        setFetchError(`Não foi possível carregar dados do painel: ${SUPABASE_ERROR_MESSAGE}`);
         setIsLoading(false);
         return;
     }
     setIsLoading(true);
+    setFetchError(null);
 
     let allQuizAttemptsQuery = supabase.from(TABLE_QUIZZES).select('id, usuario_id, titulo, criado_em, perguntas, resultado');
     let allSimRecordsQuery = supabase.from(TABLE_SIMULACOES).select('id, usuario_id, titulo, categoria, conteudo, nota, resumo_ia, criado_em');
@@ -105,117 +107,123 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
       allSimRecordsQuery = allSimRecordsQuery.gte('criado_em', periodStartDate.toISOString());
     }
 
-    const [
-        { data: allQuizAttemptsData, error: quizError },
-        { data: allSimRecordsData, error: simError },
-        { data: allUsersData, error: usersError }
-    ] = await Promise.all([
-        allQuizAttemptsQuery,
-        allSimRecordsQuery,
-        allUsersQuery
-    ]);
-    
-    if (quizError) console.error("Error loading quiz attempts:", quizError);
-    if (simError) console.error("Error loading simulation records:", simError);
-    if (usersError) console.error("Error loading users:", usersError);
+    try {
+        const [
+            { data: allQuizAttemptsData, error: quizError },
+            { data: allSimRecordsData, error: simError },
+            { data: allUsersData, error: usersError }
+        ] = await Promise.all([
+            allQuizAttemptsQuery,
+            allSimRecordsQuery,
+            allUsersQuery
+        ]);
+        
+        if (quizError) { console.error("Error loading quiz attempts:", quizError); throw new Error(`Erro ao carregar quizzes: ${quizError.message}`); }
+        if (simError) { console.error("Error loading simulation records:", simError); throw new Error(`Erro ao carregar simulações: ${simError.message}`);}
+        if (usersError) { console.error("Error loading users:", usersError); throw new Error(`Erro ao carregar usuários: ${usersError.message}`);}
 
-    const allQuizAttempts: AppQuizAttemptRecord[] = (allQuizAttemptsData || []) as AppQuizAttemptRecord[];
-    const allSimRecords: AppSimulationRecord[] = (allSimRecordsData || []) as AppSimulationRecord[];
-    const allKnownUsersList: { id: string, displayName: string, lastLogin?: string }[] = (allUsersData || []).map(u => ({
-        id: u.id,
-        displayName: u.nome,
-        // Last login would ideally be stored in Supabase or fetched differently
-        lastLogin: localStorage.getItem(`${LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX}${u.id}`) || undefined
-    }));
+        const allQuizAttempts: AppQuizAttemptRecord[] = (allQuizAttemptsData || []) as AppQuizAttemptRecord[];
+        const allSimRecords: AppSimulationRecord[] = (allSimRecordsData || []) as AppSimulationRecord[];
+        const allKnownUsersList: { id: string, displayName: string, lastLogin?: string }[] = (allUsersData || []).map(u => ({
+            id: u.id,
+            displayName: u.nome,
+            lastLogin: localStorage.getItem(`${LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX}${u.id}`) || undefined
+        }));
 
 
-    const activitiesMap = new Map<string, UserActivityData>();
-    allKnownUsersList.forEach(user => {
-        activitiesMap.set(user.id, {
-            id: user.id, displayName: user.displayName, lastLogin: user.lastLogin,
-            simulationsCompleted: 0, quizAttempts: 0, averageQuizScore: null,
-            simulationSuccessRate: null, totalActivities: 0,
+        const activitiesMap = new Map<string, UserActivityData>();
+        allKnownUsersList.forEach(user => {
+            activitiesMap.set(user.id, {
+                id: user.id, displayName: user.displayName, lastLogin: user.lastLogin,
+                simulationsCompleted: 0, quizAttempts: 0, averageQuizScore: null,
+                simulationSuccessRate: null, totalActivities: 0,
+            });
         });
-    });
-    
-    allQuizAttempts.forEach(attempt => {
-      const activity = activitiesMap.get(attempt.usuario_id);
-      if (activity) activity.quizAttempts++;
-    });
+        
+        allQuizAttempts.forEach(attempt => {
+        const activity = activitiesMap.get(attempt.usuario_id);
+        if (activity) activity.quizAttempts++;
+        });
 
-    allSimRecords.forEach(record => {
-      const activity = activitiesMap.get(record.usuario_id);
-      if (activity) activity.simulationsCompleted++;
-    });
-    
-    activitiesMap.forEach(activity => {
-        const userQuizAttemptsInPeriod = allQuizAttempts.filter(qa => qa.usuario_id === activity.id);
-        if (userQuizAttemptsInPeriod.length > 0) {
-            const totalScore = userQuizAttemptsInPeriod.reduce((sum, qa) => sum + (qa.resultado.totalQuestions > 0 ? (qa.resultado.score / qa.resultado.totalQuestions) : 0), 0);
-            activity.averageQuizScore = (totalScore / userQuizAttemptsInPeriod.length) * 100;
+        allSimRecords.forEach(record => {
+        const activity = activitiesMap.get(record.usuario_id);
+        if (activity) activity.simulationsCompleted++;
+        });
+        
+        activitiesMap.forEach(activity => {
+            const userQuizAttemptsInPeriod = allQuizAttempts.filter(qa => qa.usuario_id === activity.id);
+            if (userQuizAttemptsInPeriod.length > 0) {
+                const totalScore = userQuizAttemptsInPeriod.reduce((sum, qa) => sum + (qa.resultado.totalQuestions > 0 ? (qa.resultado.score / qa.resultado.totalQuestions) : 0), 0);
+                activity.averageQuizScore = (totalScore / userQuizAttemptsInPeriod.length) * 100;
+            }
+
+            const userSimRecordsInPeriod = allSimRecords.filter(sr => sr.usuario_id === activity.id);
+            const successfulSims = userSimRecordsInPeriod.filter(sr => isSuccessOutcome(sr.conteudo.evaluation)).length;
+            if (userSimRecordsInPeriod.length > 0) {
+                activity.simulationSuccessRate = (successfulSims / userSimRecordsInPeriod.length) * 100;
+            }
+            activity.totalActivities = activity.quizAttempts + activity.simulationsCompleted;
+        });
+
+        const finalActivities = Array.from(activitiesMap.values())
+            .sort((a,b) => (b.lastLogin && a.lastLogin) ? new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime() : (b.totalActivities - a.totalActivities));
+        setUserActivities(finalActivities);
+
+        const activeUserIdsInPeriod = new Set<string>();
+        allQuizAttempts.forEach(qa => activeUserIdsInPeriod.add(qa.usuario_id));
+        allSimRecords.forEach(sr => activeUserIdsInPeriod.add(sr.usuario_id));
+
+        let overallAvgQuizScore: number | null = null;
+        if (allQuizAttempts.length > 0) {
+            const totalOverallScore = allQuizAttempts.reduce((sum, qa) => sum + (qa.resultado.totalQuestions > 0 ? (qa.resultado.score / qa.resultado.totalQuestions) : 0), 0);
+            overallAvgQuizScore = (totalOverallScore / allQuizAttempts.length) * 100;
         }
 
-        const userSimRecordsInPeriod = allSimRecords.filter(sr => sr.usuario_id === activity.id);
-        const successfulSims = userSimRecordsInPeriod.filter(sr => isSuccessOutcome(sr.conteudo.evaluation)).length;
-        if (userSimRecordsInPeriod.length > 0) {
-            activity.simulationSuccessRate = (successfulSims / userSimRecordsInPeriod.length) * 100;
+        let overallSimSuccessRate: number | null = null;
+        if (allSimRecords.length > 0) {
+            const totalSuccessfulSims = allSimRecords.filter(sr => isSuccessOutcome(sr.conteudo.evaluation)).length;
+            overallSimSuccessRate = (totalSuccessfulSims / allSimRecords.length) * 100;
         }
-        activity.totalActivities = activity.quizAttempts + activity.simulationsCompleted;
-    });
+        
+        const scoreRanges = [
+            { range: '90-100%', min: 0.9, max: 1.0, count: 0 }, { range: '70-89%', min: 0.7, max: 0.899, count: 0 },
+            { range: '50-69%', min: 0.5, max: 0.699, count: 0 }, { range: '<50%', min: 0, max: 0.499, count: 0 }
+        ];
+        allQuizAttempts.forEach(qa => {
+            const percentage = qa.resultado.totalQuestions > 0 ? qa.resultado.score / qa.resultado.totalQuestions : 0;
+            const range = scoreRanges.find(r => percentage >= r.min && percentage <= r.max + 0.0001); 
+            if (range) range.count++;
+        });
+        const quizScoreDistributionPeriod = scoreRanges.map(r => ({ ...r, percentage: allQuizAttempts.length > 0 ? (r.count / allQuizAttempts.length) * 100 : 0 }));
 
-    const finalActivities = Array.from(activitiesMap.values())
-        .sort((a,b) => (b.lastLogin && a.lastLogin) ? new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime() : (b.totalActivities - a.totalActivities));
-    setUserActivities(finalActivities);
+        const outcomeCounts: Record<string, number> = {};
+        allSimRecords.forEach(sr => {
+            const outcome = sr.conteudo.evaluation?.headerMessage || 'Não Avaliado';
+            outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
+        });
+        const simulationOutcomeDistributionPeriod = Object.entries(outcomeCounts).map(([outcome, count]) => ({
+            outcome, count, percentage: allSimRecords.length > 0 ? (count / allSimRecords.length) * 100 : 0
+        })).sort((a,b) => b.count - a.count);
 
-    const activeUserIdsInPeriod = new Set<string>();
-    allQuizAttempts.forEach(qa => activeUserIdsInPeriod.add(qa.usuario_id));
-    allSimRecords.forEach(sr => activeUserIdsInPeriod.add(sr.usuario_id));
+        setOverallStats({
+            totalUsers: allKnownUsersList.length,
+            activeUsersPeriod: activeUserIdsInPeriod.size,
+            totalSimulationsPeriod: allSimRecords.length,
+            totalQuizAttemptsPeriod: allQuizAttempts.length,
+            averageQuizScorePeriod: overallAvgQuizScore,
+            simulationSuccessRatePeriod: overallSimSuccessRate,
+            totalActivitiesPeriod: allQuizAttempts.length + allSimRecords.length,
+            quizScoreDistributionPeriod,
+            simulationOutcomeDistributionPeriod
+        });
 
-    let overallAvgQuizScore: number | null = null;
-    if (allQuizAttempts.length > 0) {
-        const totalOverallScore = allQuizAttempts.reduce((sum, qa) => sum + (qa.resultado.totalQuestions > 0 ? (qa.resultado.score / qa.resultado.totalQuestions) : 0), 0);
-        overallAvgQuizScore = (totalOverallScore / allQuizAttempts.length) * 100;
+    } catch (error: any) {
+        setFetchError(error.message || "Ocorreu um erro desconhecido ao buscar os dados.");
+        setOverallStats(null); // Clear stats on error
+        setUserActivities([]);
+    } finally {
+        setIsLoading(false);
     }
-
-    let overallSimSuccessRate: number | null = null;
-    if (allSimRecords.length > 0) {
-        const totalSuccessfulSims = allSimRecords.filter(sr => isSuccessOutcome(sr.conteudo.evaluation)).length;
-        overallSimSuccessRate = (totalSuccessfulSims / allSimRecords.length) * 100;
-    }
-    
-    const scoreRanges = [
-        { range: '90-100%', min: 0.9, max: 1.0, count: 0 }, { range: '70-89%', min: 0.7, max: 0.899, count: 0 },
-        { range: '50-69%', min: 0.5, max: 0.699, count: 0 }, { range: '<50%', min: 0, max: 0.499, count: 0 }
-    ];
-    allQuizAttempts.forEach(qa => {
-        const percentage = qa.resultado.totalQuestions > 0 ? qa.resultado.score / qa.resultado.totalQuestions : 0;
-        const range = scoreRanges.find(r => percentage >= r.min && percentage <= r.max + 0.0001); 
-        if (range) range.count++;
-    });
-    const quizScoreDistributionPeriod = scoreRanges.map(r => ({ ...r, percentage: allQuizAttempts.length > 0 ? (r.count / allQuizAttempts.length) * 100 : 0 }));
-
-    const outcomeCounts: Record<string, number> = {};
-    allSimRecords.forEach(sr => {
-        const outcome = sr.conteudo.evaluation?.headerMessage || 'Não Avaliado';
-        outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
-    });
-    const simulationOutcomeDistributionPeriod = Object.entries(outcomeCounts).map(([outcome, count]) => ({
-        outcome, count, percentage: allSimRecords.length > 0 ? (count / allSimRecords.length) * 100 : 0
-    })).sort((a,b) => b.count - a.count);
-
-    setOverallStats({
-        totalUsers: allKnownUsersList.length,
-        activeUsersPeriod: activeUserIdsInPeriod.size,
-        totalSimulationsPeriod: allSimRecords.length,
-        totalQuizAttemptsPeriod: allQuizAttempts.length,
-        averageQuizScorePeriod: overallAvgQuizScore,
-        simulationSuccessRatePeriod: overallSimSuccessRate,
-        totalActivitiesPeriod: allQuizAttempts.length + allSimRecords.length,
-        quizScoreDistributionPeriod,
-        simulationOutcomeDistributionPeriod
-    });
-
-    setIsLoading(false);
   }, [selectedPeriod]);
 
   useEffect(() => {
@@ -257,11 +265,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) => {
     ];
   }, [overallStats]);
 
-  if (isLoading || !overallStats) {
+  if (isLoading) {
     return <div className="py-12"><LoadingSpinner text="Carregando dados do painel admin..." /></div>;
   }
-   if (!supabase) {
-    return <div className="py-12 text-center text-[var(--error)]"><p>Cliente Supabase não inicializado. Verifique a configuração.</p></div>;
+   if (!supabase && !fetchError) { // If supabase is null and no fetch error set by initial check
+    setFetchError(`Não foi possível carregar dados do painel: ${SUPABASE_ERROR_MESSAGE}`);
+  }
+
+  if (fetchError) {
+    return (
+        <section id="admin-panel" className="py-8">
+            <GlassCard className="p-6 text-center">
+                <h1 className="section-title !text-center text-[var(--error)]">Erro ao Carregar Painel</h1>
+                <p className="text-[var(--color-text)]">{fetchError}</p>
+                <GlassButton onClick={fetchData} className="mt-4">Tentar Novamente</GlassButton>
+            </GlassCard>
+        </section>
+    );
+  }
+  
+  if (!overallStats) { // If fetch was successful but overallStats is still null (should not happen if no error)
+    return <div className="py-12"><p className="text-center text-[var(--color-text-light)]">Nenhum dado disponível para o painel.</p></div>;
   }
 
 
