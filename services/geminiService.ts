@@ -3,18 +3,26 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-// Check for API_KEY from process.env
-if (!process.env.API_KEY) {
+let ai: GoogleGenAI | null = null;
+
+if (process.env.API_KEY) {
+  try {
+    // Initialize GoogleGenAI directly with process.env.API_KEY as per guidelines.
+    // Assumes process.env.API_KEY is pre-configured, valid, and accessible.
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  } catch (e) {
+    console.error("Failed to initialize GoogleGenAI even with API_KEY present in process.env:", e);
+    // 'ai' will remain null. Functions below will throw API_KEY_ERROR_MESSAGE due to existing checks.
+  }
+} else {
   // This console error will use the generic API_KEY_ERROR_MESSAGE from constants.ts
   console.error(API_KEY_ERROR_MESSAGE); 
 }
 
-// Initialize GoogleGenAI directly with process.env.API_KEY as per guidelines.
-// Assumes process.env.API_KEY is pre-configured, valid, and accessible.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
   if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
   try {
     const model = 'gemini-2.5-flash-preview-04-17';
     const prompt = `
@@ -85,6 +93,7 @@ export async function startChatSession(
   displayInitialAiMessageInChatUI: boolean
 ): Promise<{chat: Chat; initialAiMessage: string}> {
   if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
 
   const customPrompt = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY);
   let systemInstruction = customPrompt || GEMINI_SIMULATOR_PROMPT_TEMPLATE;
@@ -116,6 +125,7 @@ export async function startChatSession(
 
 export async function sendChatMessage(chat: Chat | null, userMessageText: string): Promise<string> {
   if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  // No need to check for 'ai' here as 'chat' object would not exist if 'ai' was null during startChatSession
   if (!chat) throw new Error("Chat não iniciado.");
 
   try {
@@ -132,6 +142,7 @@ export async function sendChatMessage(chat: Chat | null, userMessageText: string
 
 export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenario | null> {
   if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
   try {
     const model = 'gemini-2.5-flash-preview-04-17';
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -207,6 +218,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
 
 export async function transcribeAudioWithGemini(audioBase64: string, mimeType: string = 'audio/webm'): Promise<AudioTranscriptionResponse> {
     if (!process.env.API_KEY) return { error: API_KEY_ERROR_MESSAGE };
+    if (!ai) return { error: API_KEY_ERROR_MESSAGE }; // Added check for initialized 'ai'
 
     try {
         const audioPart: Part = {
@@ -252,6 +264,7 @@ export async function transcribeAudioWithGemini(audioBase64: string, mimeType: s
 
 export async function evaluateObjectionResponse(objectionText: string, userResponseText: string, objectionContext?: string): Promise<string> {
   if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
 
   let prompt = GEMINI_OBJECTION_EVALUATOR_PROMPT;
   prompt = prompt.replace("{OBJECTION_TEXT}", objectionText);
@@ -279,6 +292,7 @@ export async function generateCollaboratorAnalysis(
   managerPromptTemplate: string
 ): Promise<string> {
   if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
 
   const finalPrompt = managerPromptTemplate.replace("{USER_DATA_PLACEHOLDER}", userData);
 
