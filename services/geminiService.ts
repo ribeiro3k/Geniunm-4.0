@@ -3,14 +3,16 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-// Acessar a API Key usando process.env.API_KEY
-const API_KEY = process.env.API_KEY;
+// More robust way to access process.env.API_KEY
+const API_KEY = (typeof process !== 'undefined' && process.env && typeof process.env.API_KEY === 'string')
+  ? process.env.API_KEY
+  : undefined;
 
 if (!API_KEY) {
   console.error(API_KEY_ERROR_MESSAGE);
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY" });
+const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY_PLACEHOLDER" }); // Provide a placeholder if key is missing
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
   if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
@@ -261,7 +263,7 @@ export async function evaluateObjectionResponse(objectionText: string, userRespo
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-04-17',
       contents: [{role: 'user', parts: [{text: prompt}]}],
-      config: {}
+      config: {} // Using default model config for this type of evaluation
     });
     return response.text;
   } catch (error) {
@@ -285,6 +287,7 @@ export async function generateCollaboratorAnalysis(
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-04-17',
       contents: [{ role: "user", parts: [{text: finalPrompt}] }],
+      // Using default model config for this analysis task
     });
     return response.text;
   } catch (error) {
