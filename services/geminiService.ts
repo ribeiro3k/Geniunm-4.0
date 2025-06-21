@@ -3,11 +3,11 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-// Access API_KEY using process.env
+// Access API_KEY using process.env.API_KEY
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  console.error(API_KEY_ERROR_MESSAGE);
+  console.error(API_KEY_ERROR_MESSAGE); 
 }
 
 // Initialize GoogleGenAI with the API key.
