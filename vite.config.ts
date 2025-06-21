@@ -1,20 +1,25 @@
-// vite.config.js (ou vite.config.ts)
-import { defineConfig } from 'vite';
+// vite.config.js
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react'; // Se você usa React
 
 export default defineConfig(({ mode }) => {
-  // O Vercel disponibiliza as variáveis de ambiente para o processo de build.
-  // Aqui, estamos assumindo que 'API_KEY' está disponível como process.env.API_KEY
-  // DURANTE O BUILD no ambiente Vercel.
-  const apiKeyFromEnv = process.env.API_KEY;
+  // Carrega as variáveis de ambiente do Vercel disponíveis durante o build
+  // O Vercel define process.env.NODE_ENV como 'production' ou 'development'
+  // e disponibiliza as variáveis de ambiente que você configurou no painel.
+  const env = loadEnv(mode, process.cwd(), ''); // Carrega .env e variáveis de sistema
 
   return {
-    plugins: [react()], // Adicione outros plugins se necessário
+    plugins: [react()],
     define: {
-      'process.env.API_KEY': JSON.stringify(apiKeyFromEnv)
-      // Se você precisasse fazer o mesmo para o Supabase (mas não precisa, pois ele usa VITE_):
-      // 'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL),
-      // 'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY),
+      // Isso faz a substituição:
+      // No seu código: process.env.API_KEY
+      // No build final: "valor_da_sua_api_key_do_vercel"
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+
+      // Para o Supabase, o Vite já lida com import.meta.env.VITE_... automaticamente,
+      // então você não precisa definir VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY aqui
+      // se estiver usando import.meta.env no código do Supabase.
+      // Apenas para API_KEY do Gemini é que precisamos dessa "mágica" devido à exigência da biblioteca.
     }
   }
 });
