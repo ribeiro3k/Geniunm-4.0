@@ -716,4 +716,3 @@ export const DEFAULT_REPORT_KPIS: ReportKPIs = {
     fechamento: true,
   },
 };
-
