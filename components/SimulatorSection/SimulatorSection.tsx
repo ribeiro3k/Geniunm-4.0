@@ -300,7 +300,7 @@ const SimulatorSection: React.FC<SimulatorSectionProps> = ({
 
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [apiKeyAvailable, setApiKeyAvailable] = useState(true);
+  const [apiKeyAvailable, setApiKeyAvailable] = useState(true); // Assume available, service will error out if not
 
   const currentChatRef = useRef<Chat | null>(null);
   const userMessageStatusTimers = useRef<Record<string, number[]>>({});
@@ -326,10 +326,7 @@ const SimulatorSection: React.FC<SimulatorSectionProps> = ({
   const isSmallScreenEndView = isTerminalStateReached && isSmallScreen;
 
   useEffect(() => {
-    if (!process.env.API_KEY) {
-      setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE);
-    }
+    // API Key check is removed from here. It will be handled by service calls.
     return () => {
         Object.values(userMessageStatusTimers.current).forEach(timers => timers.forEach(clearTimeout));
     };
@@ -423,6 +420,7 @@ const SimulatorSection: React.FC<SimulatorSectionProps> = ({
     setIsBossModeActive(false);
     setShowBossWarningOverlay(false);
     setIsNextMessageFromAudio(false);
+    setApiKeyAvailable(true); // Reset to true, errors will set it to false
   };
 
 const _displayAiMessageProgressively = useCallback((
@@ -481,6 +479,9 @@ const _displayAiMessageProgressively = useCallback((
     setIsLoadingAI(true);
     setMessages([]);
     setSaveError(null);
+    setError(null); // Clear previous errors
+    setApiKeyAvailable(true); // Assume available
+
     try {
       const { chat, initialAiMessage: scenarioInitialMsg } = await startChatSession(
         scenarioToStart, 
@@ -493,7 +494,12 @@ const _displayAiMessageProgressively = useCallback((
       }
       setSimulationActive(true);
     } catch (e) {
-        const err = e as Error; setError(err.message || "Falha ao iniciar simulação com IA."); setSimulationActive(false);
+        const err = e as Error; 
+        setError(err.message || "Falha ao iniciar simulação com IA."); 
+        if (err.message === API_KEY_ERROR_MESSAGE) {
+            setApiKeyAvailable(false);
+        }
+        setSimulationActive(false);
     } finally { setIsLoadingAI(false); }
   };
 
@@ -505,7 +511,7 @@ const _displayAiMessageProgressively = useCallback((
 
   const handleStartSimulation = async () => {
     if (!apiKeyAvailable || isGeneratingScenario || isLoadingAI) return;
-     if (!supabase && simulationMode === "completo") { // Only block if Supabase is needed and not available
+     if (!supabase && simulationMode === "completo") { 
         setError(`Não foi possível iniciar a simulação: ${SUPABASE_ERROR_MESSAGE}. O modo "Foco em Objeção" pode funcionar offline.`);
         return;
     }
@@ -532,7 +538,7 @@ const _displayAiMessageProgressively = useCallback((
             setShowBossWarningOverlay(true);
             return;
         }
-        setIsGeneratingScenario(true); setError(null);
+        setIsGeneratingScenario(true); setError(null); setApiKeyAvailable(true);
         try {
             const proceduralScenario = await generateProceduralLeadScenarioFromGemini();
             if (proceduralScenario) {
@@ -542,7 +548,11 @@ const _displayAiMessageProgressively = useCallback((
                 throw new Error("Cenário procedural gerado é inválido ou nulo.");
             }
         } catch (e) {
-            const err = e as Error; setError(err.message || "Falha ao gerar cenário procedural com IA.");
+            const err = e as Error; 
+            setError(err.message || "Falha ao gerar cenário procedural com IA.");
+            if (err.message === API_KEY_ERROR_MESSAGE) {
+                setApiKeyAvailable(false);
+            }
         } finally { setIsGeneratingScenario(false); }
     }
   };
@@ -820,7 +830,6 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
           }
         } else {
             if (!currentUser) setSaveError("Usuário não autenticado. A simulação não será salva.");
-            // other conditions for not saving (currentScenario or parsedData missing) are less likely if we reach here.
         }
 
         setSimulationActive(false); setIsLoadingAI(false); setIsAiTypingChunks(false);
@@ -861,13 +870,18 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
     const currentInput = textToSend;
     if (textToSend !== "finalize") setInputValue('');
     
-    setIsLoadingAI(true); setError(null);
+    setIsLoadingAI(true); setError(null); setApiKeyAvailable(true); // Assume available for this attempt
     try {
       const aiResponseText = await sendChatMessage(currentChatRef.current, currentInput);
       await processAiResponse(aiResponseText, userMessageId); 
     } catch (e) {
-      const err = e as Error; const errorMessageText = err.message.includes("API Key") ? err.message : `Erro da IA: ${err.message}. Tente novamente.`;
-      setError(errorMessageText); if(textToSend !== "finalize") updateMessageStatus(userMessageId, 'error');
+      const err = e as Error; 
+      const errorMessageText = err.message.includes("API Key") ? API_KEY_ERROR_MESSAGE : `Erro da IA: ${err.message}. Tente novamente.`;
+      setError(errorMessageText); 
+      if (errorMessageText === API_KEY_ERROR_MESSAGE) {
+          setApiKeyAvailable(false);
+      }
+      if(textToSend !== "finalize") updateMessageStatus(userMessageId, 'error');
       if (!errorMessageText.includes("API Key") && textToSend !== "finalize") {
          setMessages(prev => [...prev, {id: crypto.randomUUID(), text: `Erro ao comunicar com a IA: ${err.message}`, isUser: false, timestamp: new Date(), senderDisplayName: currentLeadDisplayName, status: 'read' }]);
       } setIsLoadingAI(false);
@@ -887,7 +901,8 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
       mediaRecorderRef.current.ondataavailable = (event) => { if (event.data.size > 0) audioChunksRef.current.push(event.data); };
       mediaRecorderRef.current.onstop = async () => {
         if (audioChunksRef.current.length === 0) { setIsRecording(false); stream.getTracks().forEach(track => track.stop()); return; }
-        setIsTranscribing(true); setError(null); const audioBlob = new Blob(audioChunksRef.current, { type: recordedAudioMimeTypeRef.current });
+        setIsTranscribing(true); setError(null); setApiKeyAvailable(true); // Assume available for this attempt
+        const audioBlob = new Blob(audioChunksRef.current, { type: recordedAudioMimeTypeRef.current });
         try {
             const audioBase64 = await blobToBase64(audioBlob);
             const transcriptionResponse = await transcribeAudioWithGemini(audioBase64, recordedAudioMimeTypeRef.current);
@@ -896,8 +911,16 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
                 setIsNextMessageFromAudio(true); 
             } else if (transcriptionResponse.error) {
                 setError(`Transcrição falhou: ${transcriptionResponse.error}`);
+                 if (transcriptionResponse.error.includes("API Key")) {
+                    setApiKeyAvailable(false);
+                }
             }
-        } catch (transcriptionError) { setError(`Erro na transcrição: ${(transcriptionError as Error).message}`); }
+        } catch (transcriptionError) { 
+            setError(`Erro na transcrição: ${(transcriptionError as Error).message}`); 
+            if ((transcriptionError as Error).message.includes("API Key")) {
+                setApiKeyAvailable(false);
+            }
+        }
         finally { setIsTranscribing(false); setIsRecording(false); stream.getTracks().forEach(track => track.stop()); audioChunksRef.current = []; }
       }; mediaRecorderRef.current.start(); setIsRecording(true);
     } catch (err) { setError(`Erro ao acessar microfone: ${(err as Error).message}. Verifique as permissões.`); setIsRecording(false); }
@@ -938,7 +961,7 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
   const handleScrollToResults = () => resultsViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   if (showBossWarningOverlay) return <BossWarningOverlay onStart={handleStartBossScenario} />;
-  if (!apiKeyAvailable && !currentScenario) {
+  if (!apiKeyAvailable && !currentScenario && !isLoadingAI && !isGeneratingScenario) {
     return ( <section id="simulador" className="py-12 mt-8"> <GlassCard className="max-w-4xl mx-auto text-center p-8">
             <h2 className="section-title !text-center text-[var(--error)]">Erro de Configuração</h2>
             <p className="text-xl text-[var(--color-text)]">{API_KEY_ERROR_MESSAGE}</p>
@@ -996,6 +1019,7 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
             </div>
               {(error || saveError) && <p className="text-[var(--error)] text-center mt-6 p-2 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.2)] rounded-md text-sm">{error || saveError}</p>}
               {!supabase && simulationMode === 'completo' && <p className="text-[var(--error)] text-center mt-4 text-xs">Supabase não configurado. O salvamento de simulações no modo completo está desabilitado.</p>}
+              {!apiKeyAvailable && (error === API_KEY_ERROR_MESSAGE) && <p className="text-[var(--error)] text-center mt-4 text-xs">{API_KEY_ERROR_MESSAGE}</p>}
             </div> </GlassCard> </section> ); }
 
   const rootSectionClass = `py-0 ${isSmallScreenEndView ? 'flex flex-col flex-grow h-full' : 'md:py-8'}`;
@@ -1210,6 +1234,7 @@ const parseEvaluationResult = (evaluationText: string | null): ParsedEvaluationT
                 {messages.map((msg, index) => ( <MessageBubble key={msg.id} message={msg} /> ))} </div>
               {(error || saveError) && !parsedEvaluation && <p className="text-[var(--error)] text-center p-2 bg-[rgba(var(--error-rgb),0.1)] border-t border-[rgba(var(--error-rgb),0.2)] text-sm">{error || saveError}</p>}
               {!supabase && simulationMode === 'completo' && !parsedEvaluation && <p className="text-[var(--error)] text-center p-1 bg-[rgba(var(--error-rgb),0.1)] text-xs">Supabase não configurado. O salvamento de simulações no modo completo está desabilitado.</p>}
+              {!apiKeyAvailable && (error === API_KEY_ERROR_MESSAGE) && !parsedEvaluation && <p className="text-[var(--error)] text-center p-1 bg-[rgba(var(--error-rgb),0.1)] text-xs">{API_KEY_ERROR_MESSAGE}</p>}
               <ChatInputArea inputValue={inputValue} onInputChange={setInputValue} onSendMessage={() => handleSendMessage()}
                   isLoadingAI={isLoadingAI && !isAiTypingChunks} isAiTypingChunks={isAiTypingChunks} simulationActive={simulationActive}
                   isRecording={isRecording} isTranscribing={isTranscribing} onStartRecord={handleStartRecording} onStopRecord={handleStopRecording}
