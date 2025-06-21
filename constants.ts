@@ -1,9 +1,10 @@
 
 import { QuizQuestionType, Scenario, NavItem, NavigationSection, Objection, SimulatorBehavioralProfile, ReportFilterConfig, ReportKPIs, SimpleUserCredentials } from './types';
 
-// Mensagens de erro atualizadas para API_KEY, SUPABASE_URL e SUPABASE_ANON_KEY (via process.env)
+// API_KEY_ERROR_MESSAGE remains as is, due to strict Gemini API guidelines requiring process.env.API_KEY.
 export const API_KEY_ERROR_MESSAGE = "API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY no seu ambiente de build (ex: Vercel).";
-export const SUPABASE_ERROR_MESSAGE = "Supabase URL ou Anon Key não configurados. Verifique as variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY no seu ambiente de build (ex: Vercel).";
+// SUPABASE_ERROR_MESSAGE updated to guide user for VITE_ prefixed variables accessed via import.meta.env.
+export const SUPABASE_ERROR_MESSAGE = "Supabase URL ou Anon Key não configurados. Verifique as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no seu ambiente de build (ex: Vercel).";
 
 export const ADMIN_FIXED_PASSWORD = "fenix@2025";
 export const LOCAL_STORAGE_CURRENT_USER_KEY = 'geniunmCurrentUser';
