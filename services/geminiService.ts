@@ -5,11 +5,11 @@ import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTI
 
 let ai: GoogleGenAI | null = null;
 
-if (process.env.API_KEY) {
+if (import.meta.env.VITE_API_KEY) {
   try {
-    // Initialize GoogleGenAI directly with process.env.API_KEY as per guidelines.
-    // Assumes process.env.API_KEY is pre-configured, valid, and accessible.
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Initialize GoogleGenAI directly with import.meta.env.VITE_API_KEY as per guidelines.
+    // Assumes import.meta.env.VITE_API_KEY is pre-configured, valid, and accessible.
+    ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
   } catch (e) {
     console.error("Failed to initialize GoogleGenAI even with API_KEY present in process.env:", e);
     // 'ai' will remain null. Functions below will throw API_KEY_ERROR_MESSAGE due to existing checks.
@@ -21,7 +21,7 @@ if (process.env.API_KEY) {
 
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
-  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
   try {
     const model = 'gemini-2.5-flash-preview-04-17';
@@ -92,7 +92,7 @@ export async function startChatSession(
   scenario: Scenario,
   displayInitialAiMessageInChatUI: boolean
 ): Promise<{chat: Chat; initialAiMessage: string}> {
-  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
 
   const customPrompt = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY);
@@ -124,7 +124,7 @@ export async function startChatSession(
 
 
 export async function sendChatMessage(chat: Chat | null, userMessageText: string): Promise<string> {
-  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   // No need to check for 'ai' here as 'chat' object would not exist if 'ai' was null during startChatSession
   if (!chat) throw new Error("Chat não iniciado.");
 
@@ -141,7 +141,7 @@ export async function sendChatMessage(chat: Chat | null, userMessageText: string
 }
 
 export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenario | null> {
-  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
   try {
     const model = 'gemini-2.5-flash-preview-04-17';
@@ -217,7 +217,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
 
 
 export async function transcribeAudioWithGemini(audioBase64: string, mimeType: string = 'audio/webm'): Promise<AudioTranscriptionResponse> {
-    if (!process.env.API_KEY) return { error: API_KEY_ERROR_MESSAGE };
+    if (!import.meta.env.VITE_API_KEY) return { error: API_KEY_ERROR_MESSAGE };
     if (!ai) return { error: API_KEY_ERROR_MESSAGE }; // Added check for initialized 'ai'
 
     try {
@@ -263,7 +263,7 @@ export async function transcribeAudioWithGemini(audioBase64: string, mimeType: s
 }
 
 export async function evaluateObjectionResponse(objectionText: string, userResponseText: string, objectionContext?: string): Promise<string> {
-  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
 
   let prompt = GEMINI_OBJECTION_EVALUATOR_PROMPT;
@@ -291,7 +291,7 @@ export async function generateCollaboratorAnalysis(
   userData: string,
   managerPromptTemplate: string
 ): Promise<string> {
-  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
 
   const finalPrompt = managerPromptTemplate.replace("{USER_DATA_PLACEHOLDER}", userData);
