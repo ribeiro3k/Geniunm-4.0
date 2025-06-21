@@ -3,21 +3,18 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-// Access API_KEY using process.env.API_KEY
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
+// Check for API_KEY from process.env
+if (!process.env.API_KEY) {
+  // This console error will use the generic API_KEY_ERROR_MESSAGE from constants.ts
   console.error(API_KEY_ERROR_MESSAGE); 
 }
 
-// Initialize GoogleGenAI with the API key.
-// If API_KEY is undefined (because it's not set in the environment),
-// it will default to "MISSING_API_KEY_PLACEHOLDER".
-// The service functions will throw an error if API_KEY is truly missing.
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY_PLACEHOLDER" });
+// Initialize GoogleGenAI directly with process.env.API_KEY as per guidelines.
+// Assumes process.env.API_KEY is pre-configured, valid, and accessible.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
-  if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   try {
     const model = 'gemini-2.5-flash-preview-04-17';
     const prompt = `
@@ -87,7 +84,7 @@ export async function startChatSession(
   scenario: Scenario,
   displayInitialAiMessageInChatUI: boolean
 ): Promise<{chat: Chat; initialAiMessage: string}> {
-  if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
 
   const customPrompt = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY);
   let systemInstruction = customPrompt || GEMINI_SIMULATOR_PROMPT_TEMPLATE;
@@ -118,7 +115,7 @@ export async function startChatSession(
 
 
 export async function sendChatMessage(chat: Chat | null, userMessageText: string): Promise<string> {
-  if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   if (!chat) throw new Error("Chat não iniciado.");
 
   try {
@@ -134,7 +131,7 @@ export async function sendChatMessage(chat: Chat | null, userMessageText: string
 }
 
 export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenario | null> {
-  if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
   try {
     const model = 'gemini-2.5-flash-preview-04-17';
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -209,7 +206,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
 
 
 export async function transcribeAudioWithGemini(audioBase64: string, mimeType: string = 'audio/webm'): Promise<AudioTranscriptionResponse> {
-    if (!API_KEY) return { error: API_KEY_ERROR_MESSAGE };
+    if (!process.env.API_KEY) return { error: API_KEY_ERROR_MESSAGE };
 
     try {
         const audioPart: Part = {
@@ -254,7 +251,7 @@ export async function transcribeAudioWithGemini(audioBase64: string, mimeType: s
 }
 
 export async function evaluateObjectionResponse(objectionText: string, userResponseText: string, objectionContext?: string): Promise<string> {
-  if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
 
   let prompt = GEMINI_OBJECTION_EVALUATOR_PROMPT;
   prompt = prompt.replace("{OBJECTION_TEXT}", objectionText);
@@ -281,7 +278,7 @@ export async function generateCollaboratorAnalysis(
   userData: string,
   managerPromptTemplate: string
 ): Promise<string> {
-  if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
+  if (!process.env.API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
 
   const finalPrompt = managerPromptTemplate.replace("{USER_DATA_PLACEHOLDER}", userData);
 
