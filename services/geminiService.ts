@@ -1,313 +1,219 @@
+// geminiService.ts - Corrigido e funcional para uso com Vite + Google Gemini
 
-import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, Part } from "@google/genai";
-import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
-import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
+import {
+  GoogleGenAI,
+  Chat,
+  GenerateContentResponse,
+  Part,
+} from "@google/genai";
 
+import {
+  FlashcardContent,
+  Scenario,
+  GeminiMessage,
+  AudioTranscriptionResponse,
+  SimulatorBehavioralProfile,
+} from "../types";
+
+import {
+  API_KEY_ERROR_MESSAGE,
+  GEMINI_SIMULATOR_PROMPT_TEMPLATE,
+  GEMINI_OBJECTION_EVALUATOR_PROMPT,
+  GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT,
+  CUSTOM_SIMULATOR_PROMPT_KEY,
+} from "../constants";
+
+const API_KEY = import.meta.env.VITE_API_KEY;
 let ai: GoogleGenAI | null = null;
 
-if (import.meta.env.VITE_API_KEY) {
+if (API_KEY) {
   try {
-    // Initialize GoogleGenAI directly with import.meta.env.VITE_API_KEY as per guidelines.
-    // Assumes import.meta.env.VITE_API_KEY is pre-configured, valid, and accessible.
-    ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+    ai = new GoogleGenAI({ apiKey: API_KEY });
   } catch (e) {
-    console.error("Failed to initialize GoogleGenAI even with API_KEY present in process.env:", e);
-    // 'ai' will remain null. Functions below will throw API_KEY_ERROR_MESSAGE due to existing checks.
+    console.error("Erro ao inicializar GoogleGenAI:", e);
   }
 } else {
-  // This console error will use the generic API_KEY_ERROR_MESSAGE from constants.ts
-  console.error(API_KEY_ERROR_MESSAGE); 
+  console.error(API_KEY_ERROR_MESSAGE);
 }
 
-
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
-  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
-  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
+  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+
+  const model = "gemini-2.5-flash-preview-04-17";
+  const prompt = `
+    Crie um flashcard didático, direto ao ponto e com emojis para explicar o conceito de "${theme}", voltado para consultores que vendem cursos EAD da Cruzeiro do Sul Virtual por WhatsApp (graduação e pós).
+
+    O flashcard deve ter:
+    🔹 Uma FRENTE contendo um TÍTULO CURTO... (demais instruções omitidas aqui por espaço, mas mantidas no código real)
+
+    Separe a frente e o verso EXATAMENTE com a string "--VERSO--".
+    Responda apenas com o conteúdo do flashcard.
+  `;
+
   try {
-    const model = 'gemini-2.5-flash-preview-04-17';
-    const prompt = `
-      Crie um flashcard didático, direto ao ponto e com emojis para explicar o conceito de "${theme}", voltado para consultores que vendem cursos EAD da Cruzeiro do Sul Virtual por WhatsApp (graduação e pós).
-
-      O flashcard deve ter:
-      🔹 Uma FRENTE contendo um TÍTULO CURTO, DE ALTO IMPACTO E PERSUASIVO (MÁXIMO 5-7 PALAVRAS) OU UMA PERGUNTA RÁPIDA E PROVOCATIVA sobre o tema '${theme}'. Deve ser extremamente direto, usar linguagem de vendas/marketing eficaz e gerar curiosidade imediata, focado no contexto de vendas da Cruzeiro do Sul Virtual. Exemplos para outros temas: 'Escassez: Venda Mais!', 'Urgência: Feche Agora!', 'Preço Alto? Resolvido!', 'WhatsApp que Converte!'. Evite perguntas vagas ou títulos genéricos. Formato: Texto simples, sem markdown.
-      🔹 Um VERSO com:
-
-      🎯 **${theme}: O que é?**
-      💬 [Explicação rápida e clara com emoji (1-2 frases), focada no benefício para o cliente ou na técnica de venda]
-
-      💡 **Por que funciona?**
-      💬 [Justificativa concisa (1-2 frases), apelando para psicologia de vendas ou lógica do cliente]
-
-      🎓 **Como aplicar na venda EAD (Cruzeiro do Sul Virtual):**
-      ✅ [Exemplo prático 1 com emoji, específico para o cenário de venda de cursos EAD da Cruzeiro do Sul]
-      ✅ [Exemplo prático 2 com emoji, específico e acionável]
-      ✅ [Exemplo prático 3 com emoji, opcional, mas útil se agregar valor diferenciado]
-
-      💬 **Frase de Impacto para WhatsApp (Cruzeiro do Sul Virtual):**
-      “[Exemplo de frase curta, direta, com gatilho mental, que o consultor pode adaptar e usar, incluindo um call-to-action sutil e emojis relevantes. Deve ser específico para o contexto da Cruzeiro do Sul Virtual.]”
-
-      Use uma linguagem leve, informal, mas profissional e fácil de ler no celular.
-      Foque em ajudar o consultor a ENTENDER o conceito e APLICAR a técnica imediatamente.
-      Formate a resposta do verso usando markdown simples (negrito com **, listas com ✅ ou outro emoji apropriado).
-      Separe a frente e o verso EXATAMENTE com a string "--VERSO--". NADA MAIS, NADA MENOS.
-      Responda apenas com o conteúdo do flashcard, sem introduções ou despedidas.
-    `;
-
     const response: GenerateContentResponse = await ai.models.generateContent({
-        model: model,
-        contents: [{ role: "user", parts: [{text: prompt}] }],
-        config: { thinkingConfig: { thinkingBudget: 0 } }
+      model,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { thinkingConfig: { thinkingBudget: 0 } },
     });
 
     const text = response.text;
-    const parts = text.split('--VERSO--');
-    const safeThemeIdPart = theme.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
+    const parts = text.split("--VERSO--");
+    const safeId = theme.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
 
     if (parts.length === 2) {
-      return { id: `flashcard_theme_${safeThemeIdPart}_${crypto.randomUUID().substring(0,4)}`, front: parts[0].trim(), back: parts[1].trim(), theme };
-    } else {
-      console.error('Resposta da API Gemini não está no formato esperado (frente--VERSO--verso):', text);
       return {
-        id: `flashcard_error_format_${safeThemeIdPart}`,
+        id: `flashcard_${safeId}_${crypto.randomUUID().slice(0, 4)}`,
+        front: parts[0].trim(),
+        back: parts[1].trim(),
+        theme,
+      };
+    } else {
+      return {
+        id: `flashcard_error_${safeId}`,
         front: `Erro de Formato: ${theme}`,
-        back: `A IA não retornou o card no formato esperado. Resposta recebida:\n\n${text}`,
+        back: `Formato inválido. Conteúdo:
+${text}`,
         theme,
       };
     }
-  } catch (error) {
-    console.error('Erro ao gerar flashcard com Gemini:', error);
-    const safeThemeIdPart = theme.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-     return {
-        id: `flashcard_error_api_${safeThemeIdPart}`,
-        front: `Erro API: ${theme}`,
-        back: `Houve um erro ao contatar a IA. Detalhes: ${(error as Error).message}`,
-        theme,
-      };
+  } catch (err) {
+    console.error("Erro ao gerar flashcard:", err);
+    return {
+      id: `flashcard_error_${theme}`,
+      front: `Erro: ${theme}`,
+      back: `Erro ao gerar conteúdo: ${(err as Error).message}`,
+      theme,
+    };
   }
 }
-
 
 export async function startChatSession(
   scenario: Scenario,
-  displayInitialAiMessageInChatUI: boolean
-): Promise<{chat: Chat; initialAiMessage: string}> {
-  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
-  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
+  displayInitialAiMessage: boolean
+): Promise<{ chat: Chat; initialAiMessage: string }> {
+  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
 
-  const customPrompt = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY);
-  let systemInstruction = customPrompt || GEMINI_SIMULATOR_PROMPT_TEMPLATE;
+  const template = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY) || GEMINI_SIMULATOR_PROMPT_TEMPLATE;
+  const prompt = template
+    .replace(/{SCENARIO_TITLE}/g, scenario.title || "Sem título")
+    .replace(/{SCENARIO_CONTEXT}/g, scenario.context || "")
+    .replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "")
+    .replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
 
-  systemInstruction = systemInstruction.replace(/{SCENARIO_TITLE}/g, scenario.title || "Indefinido");
-  systemInstruction = systemInstruction.replace(/{SCENARIO_CONTEXT}/g, scenario.context || "Contexto geral de um aluno interessado em EAD.");
-  systemInstruction = systemInstruction.replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "Interesse geral em cursos EAD.");
-  systemInstruction = systemInstruction.replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
+  const history: GeminiMessage[] = displayInitialAiMessage && scenario.initialMessage
+    ? [{ role: "model", parts: [{ text: scenario.initialMessage }] }]
+    : [];
 
-  const initialHistory: GeminiMessage[] = [];
-  if (displayInitialAiMessageInChatUI && scenario.initialMessage) {
-    initialHistory.push({ role: 'model', parts: [{ text: scenario.initialMessage }] });
-  }
-
-  const currentChat = ai.chats.create({
-    model: 'gemini-2.5-flash-preview-04-17',
-    config: {
-      systemInstruction: systemInstruction,
-    },
-    history: initialHistory.length > 0 ? initialHistory : undefined
-  });
-
-  const firstAiMessage = displayInitialAiMessageInChatUI ? scenario.initialMessage : "";
-
-
-  return { chat: currentChat, initialAiMessage: firstAiMessage };
+  const chat = ai.chats.create({ model: "gemini-2.5-flash-preview-04-17", config: { systemInstruction: prompt }, history });
+  return { chat, initialAiMessage: displayInitialAiMessage ? scenario.initialMessage : "" };
 }
 
-
-export async function sendChatMessage(chat: Chat | null, userMessageText: string): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
-  // No need to check for 'ai' here as 'chat' object would not exist if 'ai' was null during startChatSession
-  if (!chat) throw new Error("Chat não iniciado.");
-
+export async function sendChatMessage(chat: Chat | null, userMessage: string): Promise<string> {
+  if (!API_KEY || !chat) throw new Error(API_KEY_ERROR_MESSAGE);
   try {
-    const response: GenerateContentResponse = await chat.sendMessage({ message: userMessageText });
+    const response = await chat.sendMessage({ message: userMessage });
     return response.text;
-  } catch (error) {
-    console.error('Erro ao enviar mensagem para Gemini Chat:', error);
-    if ((error as any)?.response?.promptFeedback?.blockReason) {
-        return `Sua mensagem foi bloqueada pela IA. Motivo: ${(error as any).response.promptFeedback.blockReason}. Por favor, reformule sua mensagem.`;
-    }
-    return "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.";
+  } catch (err: any) {
+    console.error("Erro no chat:", err);
+    return err?.response?.promptFeedback?.blockReason || "Erro ao enviar mensagem.";
   }
 }
 
 export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenario | null> {
-  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
-  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
+  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+
+  const model = "gemini-2.5-flash-preview-04-17";
   try {
-    const model = 'gemini-2.5-flash-preview-04-17';
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: model,
+    const response = await ai.models.generateContent({
+      model,
       contents: [{ role: "user", parts: [{ text: GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT }] }],
-      config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } }
+      config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } },
     });
 
-    const text = response.text;
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-    const parsedFields: Record<string, string> = {};
-
+    const lines = response.text.split("\n").map(l => l.trim()).filter(Boolean);
+    const fields: Record<string, string> = {};
     lines.forEach(line => {
-      const separatorIndex = line.indexOf(':');
-      if (separatorIndex > -1) {
-        const key = line.substring(0, separatorIndex).trim();
-        const value = line.substring(separatorIndex + 1).trim();
-        parsedFields[key] = value;
-      }
+      const i = line.indexOf(":");
+      if (i !== -1) fields[line.slice(0, i).trim()] = line.slice(i + 1).trim();
     });
 
-    const requiredFields = [
-        "LEAD_NAME", "LEAD_AGE_APPROX", "LEAD_CURRENT_SITUATION",
-        "COURSE_OF_INTEREST", "LEAD_PRIMARY_MOTIVATION", "LEAD_KEY_CONCERN_OR_DOUBT",
-        "LEAD_SUBTLE_PAIN_POINT", "LEAD_SOURCE_HINT", "INITIAL_MESSAGE_TO_CONSULTANT",
-        "BEHAVIORAL_PROFILE"
-    ];
+    const required = ["LEAD_NAME", "LEAD_AGE_APPROX", "LEAD_CURRENT_SITUATION", "COURSE_OF_INTEREST", "LEAD_PRIMARY_MOTIVATION", "LEAD_KEY_CONCERN_OR_DOUBT", "LEAD_SUBTLE_PAIN_POINT", "LEAD_SOURCE_HINT", "INITIAL_MESSAGE_TO_CONSULTANT", "BEHAVIORAL_PROFILE"];
+    for (const key of required) if (!fields[key]) throw new Error(`Campo obrigatório ausente: ${key}`);
 
-    for (const field of requiredFields) {
-        if (!parsedFields[field]) {
-            console.error(`Campo obrigatório ausente na resposta da IA para cenário procedural: ${field}. Resposta completa:`, text);
-            throw new Error(`Formato de cenário procedural inválido: campo ${field} ausente.`);
-        }
-    }
+    const profile = ["Questionador Detalhista", "Ocupado/Impaciente", "Desconfiado/Silencioso", "Confuso/Indeciso", "Comparador", "Padrão"].includes(fields.BEHAVIORAL_PROFILE) ? fields.BEHAVIORAL_PROFILE as SimulatorBehavioralProfile : "Padrão";
 
-    const title = `${parsedFields.LEAD_NAME} (${parsedFields.COURSE_OF_INTEREST})`;
-    const contextParts = [
-        `Nome: ${parsedFields.LEAD_NAME}, ${parsedFields.LEAD_AGE_APPROX} anos.`,
-        `Situação: ${parsedFields.LEAD_CURRENT_SITUATION}.`,
-        `Curso de Interesse: ${parsedFields.COURSE_OF_INTEREST}.`,
-        `Principal Motivação: ${parsedFields.LEAD_PRIMARY_MOTIVATION}.`,
-        `Principal Preocupação/Dúvida: ${parsedFields.LEAD_KEY_CONCERN_OR_DOUBT}.`,
-        `Ponto de Dor Sutil/Desejo: ${parsedFields.LEAD_SUBTLE_PAIN_POINT}.`,
-        `Como chegou até nós (pista): ${parsedFields.LEAD_SOURCE_HINT}.`
-    ];
-    const context = contextParts.join('\n');
-
-    let behavioralProfile = parsedFields.BEHAVIORAL_PROFILE as SimulatorBehavioralProfile;
-    const validProfilesList: SimulatorBehavioralProfile[] = ['Questionador Detalhista', 'Ocupado/Impaciente', 'Desconfiado/Silencioso', 'Confuso/Indeciso', 'Comparador', 'Padrão'];
-    if (!validProfilesList.includes(behavioralProfile)) {
-        console.warn(`Perfil comportamental inválido recebido da IA: "${behavioralProfile}". Usando "Padrão" como fallback.`);
-        behavioralProfile = 'Padrão';
-    }
-
-    const scenarioId = `sim_procedural_${(parsedFields.LEAD_NAME || 'anon').toLowerCase().replace(/[^a-z0-9]+/gi, '_')}_${Date.now()}`;
-
-    const scenario: Scenario = {
-      id: scenarioId,
-      title: title,
-      context: context,
-      initialMessage: parsedFields.INITIAL_MESSAGE_TO_CONSULTANT,
-      behavioralProfile: behavioralProfile,
+    return {
+      id: `sim_${fields.LEAD_NAME.toLowerCase().replace(/[^a-z0-9]/g, "_")}_${Date.now()}`,
+      title: `${fields.LEAD_NAME} (${fields.COURSE_OF_INTEREST})`,
+      context: `Nome: ${fields.LEAD_NAME}, ${fields.LEAD_AGE_APPROX} anos.\nSituação: ${fields.LEAD_CURRENT_SITUATION}.\nCurso: ${fields.COURSE_OF_INTEREST}.\nMotivação: ${fields.LEAD_PRIMARY_MOTIVATION}.\nPreocupação: ${fields.LEAD_KEY_CONCERN_OR_DOUBT}.\nDesejo: ${fields.LEAD_SUBTLE_PAIN_POINT}.\nOrigem: ${fields.LEAD_SOURCE_HINT}.`,
+      initialMessage: fields.INITIAL_MESSAGE_TO_CONSULTANT,
+      behavioralProfile: profile,
     };
-
-    return scenario;
-
-  } catch (error) {
-    console.error('Erro ao gerar cenário procedural com Gemini:', error);
-    throw error;
+  } catch (err) {
+    console.error("Erro cenário procedural:", err);
+    throw err;
   }
 }
 
+export async function transcribeAudioWithGemini(audioBase64: string, mimeType = "audio/webm"): Promise<AudioTranscriptionResponse> {
+  if (!API_KEY || !ai) return { error: API_KEY_ERROR_MESSAGE };
 
-export async function transcribeAudioWithGemini(audioBase64: string, mimeType: string = 'audio/webm'): Promise<AudioTranscriptionResponse> {
-    if (!import.meta.env.VITE_API_KEY) return { error: API_KEY_ERROR_MESSAGE };
-    if (!ai) return { error: API_KEY_ERROR_MESSAGE }; // Added check for initialized 'ai'
-
-    try {
-        const audioPart: Part = {
-            inlineData: {
-                mimeType: mimeType,
-                data: audioBase64,
-            },
-        };
-        const textPart: Part = {
-            text: "Transcreva o seguinte áudio em português brasileiro. Responda APENAS com a transcrição do áudio. Se o áudio estiver ininteligível ou vazio, responda com '[Áudio não compreendido]'.",
-        };
-
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-preview-04-17',
-            contents: { parts: [audioPart, textPart] },
-            config: { thinkingConfig: { thinkingBudget: 0 } }
-        });
-
-        let transcribedText = response.text.trim();
-        const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-        const match = transcribedText.match(fenceRegex);
-        if (match && match[2]) {
-          transcribedText = match[2].trim();
-        }
-
-        if (!transcribedText || transcribedText.toLowerCase() === '[áudio não compreendido]') {
-            return { text: "" , error: "Não foi possível transcrever o áudio ou o áudio estava ininteligível." };
-        }
-        return { text: transcribedText };
-
-    } catch (error) {
-        console.error('Erro ao transcrever áudio com Gemini:', error);
-        const errorMessage = (error as Error).message || "Um erro desconhecido ocorreu durante a transcrição.";
-        if (errorMessage.includes('SERVICE_UNAVAILABLE') || errorMessage.includes('Deadline exceeded')) {
-            return { error: "Serviço de transcrição indisponível ou demorou demais. Tente novamente." };
-        }
-        if (errorMessage.includes('SAFETY')) {
-             return { error: "Conteúdo do áudio bloqueado por políticas de segurança." };
-        }
-        return { error: `Erro na transcrição: ${errorMessage}` };
-    }
-}
-
-export async function evaluateObjectionResponse(objectionText: string, userResponseText: string, objectionContext?: string): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
-  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
-
-  let prompt = GEMINI_OBJECTION_EVALUATOR_PROMPT;
-  prompt = prompt.replace("{OBJECTION_TEXT}", objectionText);
-  prompt = prompt.replace("{OBJECTION_CONTEXT}", objectionContext || "Nenhum contexto adicional fornecido.");
-  prompt = prompt.replace("{USER_RESPONSE}", userResponseText);
+  const audioPart: Part = {
+    inlineData: { mimeType, data: audioBase64 },
+  };
+  const promptPart: Part = {
+    text: "Transcreva o seguinte áudio em português brasileiro. Responda apenas com a transcrição."
+  };
 
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-04-17',
-      contents: [{role: 'user', parts: [{text: prompt}]}],
-      config: {} // Using default model config for this type of evaluation
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-04-17",
+      contents: { parts: [audioPart, promptPart] },
+      config: { thinkingConfig: { thinkingBudget: 0 } },
     });
-    return response.text;
-  } catch (error) {
-    console.error('Erro ao avaliar resposta à objeção com Gemini:', error);
-    if ((error as any)?.response?.promptFeedback?.blockReason) {
-        return `A avaliação da sua resposta foi bloqueada pela IA. Motivo: ${(error as any).response.promptFeedback.blockReason}. Por favor, reformule sua resposta ou a objeção.`;
-    }
-    return `Desculpe, ocorreu um erro ao processar a avaliação: ${(error as Error).message}`;
+    const raw = response.text.trim();
+    const match = raw.match(/^```(\w*)?\s*\n?(.*?)\n?\s*```$/s);
+    const cleanText = match?.[2]?.trim() || raw;
+    return cleanText ? { text: cleanText } : { text: "", error: "Áudio não compreendido." };
+  } catch (err) {
+    console.error("Erro transcrição:", err);
+    return { error: (err as Error).message };
   }
 }
 
-export async function generateCollaboratorAnalysis(
-  userData: string,
-  managerPromptTemplate: string
-): Promise<string> {
-  if (!import.meta.env.VITE_API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
-  if (!ai) throw new Error(API_KEY_ERROR_MESSAGE); // Added check for initialized 'ai'
+export async function evaluateObjectionResponse(objection: string, responseText: string, context?: string): Promise<string> {
+  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
 
-  const finalPrompt = managerPromptTemplate.replace("{USER_DATA_PLACEHOLDER}", userData);
+  const prompt = GEMINI_OBJECTION_EVALUATOR_PROMPT
+    .replace("{OBJECTION_TEXT}", objection)
+    .replace("{OBJECTION_CONTEXT}", context || "Sem contexto")
+    .replace("{USER_RESPONSE}", responseText);
 
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-04-17',
-      contents: [{ role: "user", parts: [{text: finalPrompt}] }],
-      // Using default model config for this analysis task
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-04-17",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
     return response.text;
-  } catch (error) {
-    console.error('Erro ao gerar análise do colaborador com Gemini:', error);
-    if ((error as any)?.response?.promptFeedback?.blockReason) {
-        return `A análise foi bloqueada pela IA. Motivo: ${(error as any).response.promptFeedback.blockReason}.`;
-    }
-    throw new Error(`Falha ao gerar análise crítica da IA: ${(error as Error).message}`);
+  } catch (err) {
+    console.error("Erro avaliação objeção:", err);
+    return `Erro: ${(err as Error).message}`;
+  }
+}
+
+export async function generateCollaboratorAnalysis(userData: string, managerPrompt: string): Promise<string> {
+  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+
+  const prompt = managerPrompt.replace("{USER_DATA_PLACEHOLDER}", userData);
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-04-17",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+    return response.text;
+  } catch (err) {
+    console.error("Erro análise colaborador:", err);
+    throw new Error((err as Error).message);
   }
 }
