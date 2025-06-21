@@ -3,16 +3,18 @@ import { GoogleGenAI, Chat, GenerateContentResponse, GenerateContentParameters, 
 import { FlashcardContent, Scenario, GeminiMessage, AudioTranscriptionResponse, SimulatorBehavioralProfile } from '../types';
 import { API_KEY_ERROR_MESSAGE, GEMINI_SIMULATOR_PROMPT_TEMPLATE, GEMINI_OBJECTION_EVALUATOR_PROMPT, GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT, CUSTOM_SIMULATOR_PROMPT_KEY } from '../constants';
 
-// More robust way to access process.env.API_KEY
-const API_KEY = (typeof process !== 'undefined' && process.env && typeof process.env.API_KEY === 'string')
-  ? process.env.API_KEY
-  : undefined;
+// Access API_KEY using process.env
+const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
   console.error(API_KEY_ERROR_MESSAGE);
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY_PLACEHOLDER" }); // Provide a placeholder if key is missing
+// Initialize GoogleGenAI with the API key.
+// If API_KEY is undefined (because it's not set in the environment),
+// it will default to "MISSING_API_KEY_PLACEHOLDER".
+// The service functions will throw an error if API_KEY is truly missing.
+const ai = new GoogleGenAI({ apiKey: API_KEY || "MISSING_API_KEY_PLACEHOLDER" });
 
 export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
   if (!API_KEY) throw new Error(API_KEY_ERROR_MESSAGE);
