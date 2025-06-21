@@ -17,38 +17,22 @@ const FlashcardSection: React.FC = () => {
   const [history, setHistory] = useState<FlashcardContent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [apiKeyAvailable, setApiKeyAvailable] = useState(true);
+  const [apiKeyAvailable, setApiKeyAvailable] = useState(true); // Default to true, error handling will manage if key is actually missing via service.
   const [copiedSide, setCopiedSide] = useState<'front' | 'back' | null>(null);
   const tempDivRef = useRef<HTMLDivElement | null>(null);
 
 
-  useEffect(() => {
-    tempDivRef.current = document.createElement('div');
-    // Acessar a API Key usando process.env.API_KEY
-    if (!process.env.API_KEY) {
-      setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE);
-      setCurrentCard({
-        id: 'flashcard_error_config_apikey',
-        front: "Erro de Configuração",
-        back: API_KEY_ERROR_MESSAGE,
-        theme: "API Key"
-      });
-    } else {
-      handleGenerateCard();
+  const handleGenerateCard = useCallback(async (theme?: string) => {
+    // The apiKeyAvailable check here is mostly for subsequent manual calls.
+    // Initial call from useEffect proceeds assuming the service will handle key checks.
+    if (!apiKeyAvailable && error) { // Only prevent if an error (like API key missing) has already occurred
+        // Potentially allow retrying if error is transient, but API_KEY_ERROR_MESSAGE is not.
+        if (error === API_KEY_ERROR_MESSAGE) return;
     }
 
-    return () => {
-        // Clean up temp div if necessary
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleGenerateCard = useCallback(async (theme?: string) => {
-    if (!apiKeyAvailable) return;
 
     setIsLoading(true);
-    setError(null);
+    setError(null); // Clear previous errors before a new attempt
 
     if (isFlipped) {
         setIsFlipped(false);
@@ -60,11 +44,19 @@ const FlashcardSection: React.FC = () => {
     try {
       const newCard = await generateFlashcardFromGemini(selectedTheme);
       if (newCard) {
+        // If the service itself returned an error card (e.g. format error, or even its own API error string)
+        if (newCard.id.startsWith('flashcard_error_')) {
+            setError(newCard.back); // Display the error from the card's back content
+            if (newCard.back === API_KEY_ERROR_MESSAGE) {
+                setApiKeyAvailable(false); // Explicitly mark as unavailable if service confirms missing key
+            }
+        }
         setCurrentCard(newCard);
-        if (!history.some(hCard => hCard.id === newCard.id)) {
+        if (!history.some(hCard => hCard.id === newCard.id) && !newCard.id.startsWith('flashcard_error_')) {
            setHistory(prev => [newCard, ...prev.slice(0, 9)]);
         }
       } else {
+        // This case should ideally be handled by generateFlashcardFromGemini returning an error card or throwing
         setError("Não foi possível gerar o card. Tente novamente.");
         setCurrentCard({
             id: `flashcard_error_generate_${safeThemeIdPart}`,
@@ -75,18 +67,37 @@ const FlashcardSection: React.FC = () => {
       }
     } catch (e) {
       const err = e as Error;
-      console.error(err);
+      console.error('Error in handleGenerateCard:', err);
       setError(err.message || "Erro ao gerar card.");
+      if (err.message === API_KEY_ERROR_MESSAGE) {
+          setApiKeyAvailable(false);
+      }
       setCurrentCard({
           id: `flashcard_error_api_${safeThemeIdPart}`,
-          front: "Erro API",
+          front: err.message === API_KEY_ERROR_MESSAGE ? "Erro de Configuração" : "Erro API",
           back: err.message,
           theme: selectedTheme
         });
     } finally {
       setIsLoading(false);
     }
-  }, [apiKeyAvailable, history, isFlipped]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKeyAvailable, history, isFlipped]); // Removed 'error' from here to prevent loops if error occurs
+
+
+  useEffect(() => {
+    tempDivRef.current = document.createElement('div');
+    // Directly attempt to generate card on mount.
+    // The geminiService will throw an error if API_KEY is missing,
+    // which will be caught by handleGenerateCard.
+    handleGenerateCard();
+
+    return () => {
+        // Clean up temp div if necessary
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally keep handleGenerateCard out of deps for on-mount only behavior for *this specific effect*
+
 
   const selectHistoryItem = async (item: FlashcardContent) => {
     if (isFlipped) {
@@ -94,6 +105,13 @@ const FlashcardSection: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 350));
     }
     setCurrentCard(item);
+    setError(null); // Clear error when selecting a history item
+    if (item.id.startsWith('flashcard_error_config_apikey') || item.back === API_KEY_ERROR_MESSAGE) {
+        setApiKeyAvailable(false);
+        setError(item.back);
+    } else {
+        setApiKeyAvailable(true); // Assume key is fine if selecting a non-error card
+    }
   };
 
   const copyToClipboard = (text: string, side: 'front' | 'back') => {
@@ -153,7 +171,7 @@ const FlashcardSection: React.FC = () => {
 
           <div className="w-[350px] h-[250px] flex items-center justify-center">
             {isLoading && !currentCard && <LoadingSpinner text="Gerando card inicial..." />}
-            {!isLoading && !currentCard && !apiKeyAvailable &&
+            {!isLoading && !currentCard && !apiKeyAvailable && /* This condition might need adjustment if currentCard can be error card */
               <div className="flashcard-main">
                    <GlassCard className="flashcard-inner flex flex-col items-center justify-center p-4">
                       <p className="text-red-400 text-center font-semibold text-lg">Chave de API Faltando</p>
