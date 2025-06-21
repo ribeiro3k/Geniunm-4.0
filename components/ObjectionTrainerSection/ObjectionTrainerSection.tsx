@@ -15,7 +15,7 @@ const ObjectionTrainerSection: React.FC = () => {
   const [aiEvaluation, setAiEvaluation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [apiKeyAvailable, setApiKeyAvailable] = useState(true);
+  const [apiKeyAvailable, setApiKeyAvailable] = useState(true); // Assume available, service will error out if not
 
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -25,11 +25,7 @@ const ObjectionTrainerSection: React.FC = () => {
 
 
   useEffect(() => {
-    // Acessar a API Key usando process.env.API_KEY
-    if (!process.env.API_KEY) {
-      setApiKeyAvailable(false);
-      setError(API_KEY_ERROR_MESSAGE);
-    }
+    // API Key check is removed from here. It will be handled by service calls.
   }, []);
 
   const handleObjectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -39,16 +35,21 @@ const ObjectionTrainerSection: React.FC = () => {
     setUserResponse('');
     setAiEvaluation(null);
     setError(null);
+    setApiKeyAvailable(true); // Reset on new selection
   };
 
   const handleSubmitResponse = async () => {
-    if (!selectedObjection || !userResponse.trim() || !apiKeyAvailable) {
+    if (!selectedObjection || !userResponse.trim()) {
         if (!userResponse.trim()) setError("Por favor, insira sua resposta à objeção.");
+        return;
+    }
+     if (!apiKeyAvailable && error === API_KEY_ERROR_MESSAGE) { // Prevent retrying if API key specifically missing
         return;
     }
     setIsLoading(true);
     setAiEvaluation(null);
     setError(null);
+    setApiKeyAvailable(true); // Assume available for this attempt
 
     try {
       const evaluation = await evaluateObjectionResponse(
@@ -62,6 +63,9 @@ const ObjectionTrainerSection: React.FC = () => {
       console.error("Error getting objection evaluation:", err);
       setError(err.message || "Falha ao obter avaliação da IA.");
       setAiEvaluation(`Erro ao gerar avaliação: ${err.message}`);
+      if (err.message === API_KEY_ERROR_MESSAGE) {
+        setApiKeyAvailable(false);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +102,7 @@ const ObjectionTrainerSection: React.FC = () => {
         }
         setIsTranscribing(true);
         setError(null);
+        setApiKeyAvailable(true); // Assume available for this attempt
         const audioBlob = new Blob(audioChunksRef.current, { type: recordedAudioMimeTypeRef.current });
 
         try {
@@ -107,9 +112,15 @@ const ObjectionTrainerSection: React.FC = () => {
                 setUserResponse(prev => prev ? `${prev} ${transcriptionResponse.text}` : transcriptionResponse.text);
             } else if (transcriptionResponse.error) {
                 setError(`Transcrição falhou: ${transcriptionResponse.error}`);
+                if (transcriptionResponse.error.includes("API Key")) {
+                    setApiKeyAvailable(false);
+                }
             }
         } catch (transcriptionError) {
             setError(`Erro na transcrição: ${(transcriptionError as Error).message}`);
+            if ((transcriptionError as Error).message.includes("API Key")) {
+                setApiKeyAvailable(false);
+            }
         } finally {
             setIsTranscribing(false);
             setIsRecording(false);
@@ -204,7 +215,7 @@ const ObjectionTrainerSection: React.FC = () => {
   };
 
 
-  if (!apiKeyAvailable) {
+  if (!apiKeyAvailable && error === API_KEY_ERROR_MESSAGE && !isLoading) {
     return (
       <section id="objection-trainer" className="py-12 mt-8">
         <GlassCard className="max-w-3xl mx-auto text-center p-8">
@@ -224,7 +235,9 @@ const ObjectionTrainerSection: React.FC = () => {
           Selecione uma objeção comum, formule sua melhor resposta e receba feedback da IA para aprimorar suas técnicas.
         </p>
 
-        {error && <p className="text-[rgba(var(--error-rgb),0.9)] text-center mb-4 p-3 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.3)] rounded-md">{error}</p>}
+        {error && error !== API_KEY_ERROR_MESSAGE && <p className="text-[rgba(var(--error-rgb),0.9)] text-center mb-4 p-3 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.3)] rounded-md">{error}</p>}
+        {!apiKeyAvailable && error === API_KEY_ERROR_MESSAGE && <p className="text-[rgba(var(--error-rgb),0.9)] text-center mb-4 p-3 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.3)] rounded-md">{API_KEY_ERROR_MESSAGE}</p>}
+
 
         <div className="mb-6">
           <label htmlFor="objection-select" className="block text-sm font-medium text-[var(--accent-primary)] mb-2">
@@ -235,7 +248,7 @@ const ObjectionTrainerSection: React.FC = () => {
             value={selectedObjection?.id || ''}
             onChange={handleObjectionChange}
             className="themed-input themed-select w-full"
-            disabled={isLoading || isRecording || isTranscribing}
+            disabled={isLoading || isRecording || isTranscribing || !apiKeyAvailable}
           >
             {OBJECTIONS_LIST.map(ob => (
               <option key={ob.id} value={ob.id}>{ob.text}</option>
@@ -265,14 +278,14 @@ const ObjectionTrainerSection: React.FC = () => {
               placeholder="Digite aqui como você contornaria essa objeção..."
               value={userResponse}
               onChange={(e) => setUserResponse(e.target.value)}
-              disabled={isLoading || isRecording || isTranscribing || !selectedObjection}
+              disabled={isLoading || isRecording || isTranscribing || !selectedObjection || !apiKeyAvailable}
             />
             <AudioControls
                 isRecording={isRecording}
                 isTranscribing={isTranscribing}
                 onStartRecord={handleStartRecording}
                 onStopRecord={handleStopRecording}
-                disabled={isLoading || !selectedObjection}
+                disabled={isLoading || !selectedObjection || !apiKeyAvailable}
             />
           </div>
         </div>
@@ -280,7 +293,7 @@ const ObjectionTrainerSection: React.FC = () => {
         <div className="text-center mb-8">
           <GlassButton
             onClick={handleSubmitResponse}
-            disabled={isLoading || isRecording || isTranscribing || !selectedObjection || !userResponse.trim()}
+            disabled={isLoading || isRecording || isTranscribing || !selectedObjection || !userResponse.trim() || !apiKeyAvailable}
             className="px-6 py-2.5 text-base"
           >
             {isLoading ? <LoadingSpinner size="sm" text="Analisando..." /> : "Analisar Resposta"}
