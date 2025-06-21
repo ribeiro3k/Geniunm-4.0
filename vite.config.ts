@@ -1,26 +1,24 @@
-{
-  "name": "geniunm-training-platform-3.0----novo-layout",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@google/genai": "^1.3.0",
-    "react-router-dom": "^6.25.1",
-    "@supabase/supabase-js": "2"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
-  }
-}
+// vite.config.js
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig(({ mode }) => {
+  // Carrega as variáveis de ambiente (ex: .env, .env.production) para process.env
+  // Isso torna as variáveis de ambiente do Vercel (que são definidas em process.env durante o build)
+  // acessíveis aqui.
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
+    plugins: [react()],
+    define: {
+      // Isso substituirá 'process.env.API_KEY' no seu código do lado do cliente
+      // pelo valor real de API_KEY do ambiente de build.
+      // Certifique-se de que a variável API_KEY (sem o prefixo VITE_) esteja configurada no Vercel.
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+
+      // As chaves do Supabase já são tratadas por import.meta.env.VITE_... no arquivo supabaseClient.ts
+      // e devem ser configuradas no Vercel como VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.
+      // Portanto, nenhum 'define' é necessário para elas aqui se supabaseClient.ts usar import.meta.env.
+    }
+  };
+});
