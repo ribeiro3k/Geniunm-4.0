@@ -1,25 +1,26 @@
-// vite.config.js
-import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react'; // Se você usa React
-
-export default defineConfig(({ mode }) => {
-  // Carrega as variáveis de ambiente do Vercel disponíveis durante o build
-  // O Vercel define process.env.NODE_ENV como 'production' ou 'development'
-  // e disponibiliza as variáveis de ambiente que você configurou no painel.
-  const env = loadEnv(mode, process.cwd(), ''); // Carrega .env e variáveis de sistema
-
-  return {
-    plugins: [react()],
-    define: {
-      // Isso faz a substituição:
-      // No seu código: process.env.API_KEY
-      // No build final: "valor_da_sua_api_key_do_vercel"
-      'process.env.API_KEY': JSON.stringify(env.API_KEY),
-
-      // Para o Supabase, o Vite já lida com import.meta.env.VITE_... automaticamente,
-      // então você não precisa definir VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY aqui
-      // se estiver usando import.meta.env no código do Supabase.
-      // Apenas para API_KEY do Gemini é que precisamos dessa "mágica" devido à exigência da biblioteca.
-    }
+{
+  "name": "geniunm-training-platform-3.0----novo-layout",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@google/genai": "^1.3.0",
+    "react-router-dom": "^6.25.1",
+    "@supabase/supabase-js": "2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
   }
-});
+}
