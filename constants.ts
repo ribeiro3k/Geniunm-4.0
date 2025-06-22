@@ -1,16 +1,16 @@
-
 import { QuizQuestionType, Scenario, NavItem, NavigationSection, Objection, SimulatorBehavioralProfile, ReportFilterConfig, ReportKPIs, SimpleUserCredentials } from './types';
 
-// API_KEY_ERROR_MESSAGE remains as is, due to strict Gemini API guidelines requiring process.env.API_KEY.
-export const API_KEY_ERROR_MESSAGE = "API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY no seu ambiente de build (ex: Vercel).";
-// SUPABASE_ERROR_MESSAGE updated to guide user for VITE_ prefixed import.meta.env variables.
-export const SUPABASE_ERROR_MESSAGE = "Supabase não configurado. Verifique as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no seu ambiente Vercel/Vite.";
+// Mensagem de erro atualizada para API_KEY
+export const API_KEY_ERROR_MESSAGE = "API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY.";
+export const SUPABASE_ERROR_MESSAGE = "Supabase URL ou Anon Key não configurados. Verifique as variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY.";
 
 export const ADMIN_FIXED_PASSWORD = "fenix@2025";
 export const LOCAL_STORAGE_CURRENT_USER_KEY = 'geniunmCurrentUser';
 
 
-export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt';
+export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; // Kept for potential local-only fallback if Supabase fails catastrophically during load
+export const GLOBAL_SIMULATOR_PROMPT_ID = 'GLOBAL_SIMULATOR_PROMPT';
+
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "#/home", label: "Início", section: NavigationSection.Home, icon: "fa-home" },
@@ -663,6 +663,7 @@ export const TABLE_SIMULACOES = 'simulacoes';
 export const TABLE_QUIZZES = 'quizzes';
 export const TABLE_FLASHCARDS = 'flashcards'; // Supondo que você possa querer salvar flashcards gerados no futuro
 export const TABLE_FEEDBACKS = 'feedbacks';   // Supondo que você possa querer salvar feedbacks das simulações
+export const TABLE_CONFIGURACOES_IA = 'configuracoes_ia_simulador'; // Nova tabela para IA config
 
 export const GEMINI_COMMERCIAL_MANAGER_ANALYSIS_PROMPT_TEMPLATE: string = `
 Você é um sistema de análise de performance de consultores de vendas. Seu papel é gerar um relatório conciso e direto sobre o desempenho do colaborador, com base nos dados da plataforma de treinamento.
