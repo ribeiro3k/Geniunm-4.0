@@ -1,6 +1,6 @@
 // geminiService.ts - Corrigido e funcional para uso com Vite + Google Gemini
 
-import { supabase } from '../lib/supabaseClient'; // se ainda não estiver no topo
+
 
 import {
   ...
@@ -15,6 +15,8 @@ import {
   GenerateContentResponse,
   Part,
 } from "@google/genai";
+
+import { supabase } from '../lib/supabaseClient'; // se ainda não estiver no topo
 
 import {
   FlashcardContent,
