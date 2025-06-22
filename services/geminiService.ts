@@ -135,25 +135,25 @@ export async function startChatSession(
     }
   }
 
-  // Substituição de variáveis no prompt final
-  const finalSystemInstruction = systemInstructionContent
-    .replace(/{SCENARIO_TITLE}/g, scenario.title || "Sem título")
-    .replace(/{SCENARIO_CONTEXT}/g, scenario.context || "Contexto não informado")
-    .replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "Interesse geral em cursos EAD.")
-    .replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
+const finalSystemInstruction = systemInstructionContent
+  .replace(/{SCENARIO_TITLE}/g, scenario.title || "Sem título")
+  .replace(/{SCENARIO_CONTEXT}/g, scenario.context || "Contexto não informado")
+  .replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "Interesse geral em cursos EAD.")
+  .replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
 
   const initialHistory: GeminiMessage[] = [];
   if (displayInitialAiMessage && scenario.initialMessage) {
     initialHistory.push({ role: 'model', parts: [{ text: scenario.initialMessage }] });
   }
 
-  const chat = ai.chats.create({
-    model: "gemini-2.5-flash-preview-04-17",
-    config: {
-      systemInstruction: finalSystemInstruction,
-    },
-    history: initialHistory.length > 0 ? initialHistory : undefined
-  });
+// 👇 ESSA variável precisa ser usada no chat!
+const chat = ai.chats.create({
+  model: "gemini-2.5-flash-preview-04-17",
+  config: {
+    systemInstruction: finalSystemInstruction, // <- AQUI ENTRA O PROMPT COMPLETO
+  },
+  history: initialHistory.length > 0 ? initialHistory : undefined,
+});
 
   const firstAiMessage = displayInitialAiMessage ? scenario.initialMessage : "";
   return { chat, initialAiMessage: firstAiMessage };
