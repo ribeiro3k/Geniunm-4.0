@@ -1,5 +1,15 @@
 // geminiService.ts - Corrigido e funcional para uso com Vite + Google Gemini
 
+import { supabase } from "../lib/supabaseClient";
+import {
+  GEMINI_SIMULATOR_PROMPT_TEMPLATE,
+  CUSTOM_SIMULATOR_PROMPT_KEY,
+  TABLE_CONFIGURACOES_IA,
+  GLOBAL_SIMULATOR_PROMPT_ID,
+  SUPABASE_ERROR_MESSAGE
+} from "../constants";
+
+
 import {
   GoogleGenAI,
   Chat,
@@ -94,12 +104,44 @@ export async function startChatSession(
 ): Promise<{ chat: Chat; initialAiMessage: string }> {
   if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
 
-  const template = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY) || GEMINI_SIMULATOR_PROMPT_TEMPLATE;
-  const prompt = template
-    .replace(/{SCENARIO_TITLE}/g, scenario.title || "Sem título")
-    .replace(/{SCENARIO_CONTEXT}/g, scenario.context || "")
-    .replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "")
-    .replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
+ let systemInstructionContent = GEMINI_SIMULATOR_PROMPT_TEMPLATE; // fallback padrão
+
+// 🔍 Primeiro tentamos buscar do Supabase (via tabela `configuracoes_ia_simulador`)
+if (supabase) {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_CONFIGURACOES_IA)
+      .select('prompt_content')
+      .eq('id', GLOBAL_SIMULATOR_PROMPT_ID)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.warn('Erro ao buscar prompt customizado do Supabase:', error.message);
+    } else if (data?.prompt_content) {
+      systemInstructionContent = data.prompt_content;
+      console.log("🔧 Prompt customizado carregado do Supabase com sucesso.");
+    } else {
+      console.log("⚠️ Nenhum prompt customizado encontrado no Supabase. Usando padrão.");
+    }
+  } catch (e) {
+    console.warn('Exceção ao acessar o Supabase para carregar prompt:', (e as Error).message);
+  }
+} else {
+  console.warn('Supabase indisponível. Tentando fallback com localStorage.');
+  const localPrompt = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY);
+  if (localPrompt) {
+    systemInstructionContent = localPrompt;
+    console.log("✅ Prompt carregado do localStorage.");
+  }
+}
+
+// Substituição das variáveis dentro do prompt (seja ele vindo do Supabase, localStorage ou padrão)
+const prompt = systemInstructionContent
+  .replace(/{SCENARIO_TITLE}/g, scenario.title || "Sem título")
+  .replace(/{SCENARIO_CONTEXT}/g, scenario.context || "")
+  .replace(/{SCENARIO_INITIAL_MESSAGE_CONTEXT}/g, scenario.initialMessage || "")
+  .replace(/{BEHAVIORAL_PROFILE}/g, scenario.behavioralProfile || "Padrão");
+
 
   const history: GeminiMessage[] = displayInitialAiMessage && scenario.initialMessage
     ? [{ role: "model", parts: [{ text: scenario.initialMessage }] }]
