@@ -32,6 +32,9 @@ import {
   GEMINI_OBJECTION_EVALUATOR_PROMPT,
   GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT,
   CUSTOM_SIMULATOR_PROMPT_KEY,
+  TABLE_CONFIGURACOES_IA,         // <--- ADICIONADO
+  GLOBAL_SIMULATOR_PROMPT_ID,    // <--- ADICIONADO
+  SUPABASE_ERROR_MESSAGE         // <--- ADICIONADO
 } from "../constants";
 
 const API_KEY = import.meta.env.VITE_API_KEY;
@@ -107,6 +110,36 @@ export async function startChatSession(
 
   // Prompt base padrão
   let systemInstructionContent = GEMINI_SIMULATOR_PROMPT_TEMPLATE;
+
+    if (supabase) {
+    try {
+        const { data, error } = await supabase
+            .from(TABLE_CONFIGURACOES_IA)
+            .select('prompt_content')
+            .eq('id', GLOBAL_SIMULATOR_PROMPT_ID)
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116: "Searched for a single row, but 0 rows were found"
+            console.warn('Erro ao buscar prompt customizado do Supabase para sessão de chat, usando padrão:', error.message);
+        } else if (data?.prompt_content) {
+            systemInstructionContent = data.prompt_content;
+            console.log("Usando prompt customizado do Supabase para o simulador.");
+        } else {
+            console.log("Nenhum prompt customizado encontrado no Supabase, usando prompt padrão para o simulador.");
+        }
+    } catch (e) {
+        console.warn('Exceção ao buscar prompt customizado do Supabase para sessão de chat, usando padrão:', (e as Error).message);
+    }
+  } else {
+     console.warn(`Supabase não configurado. ${SUPABASE_ERROR_MESSAGE} Verificando localStorage como fallback para o prompt do simulador.`);
+     const localPrompt = localStorage.getItem(CUSTOM_SIMULATOR_PROMPT_KEY);
+     if (localPrompt) {
+        systemInstructionContent = localPrompt;
+        console.log("Usando prompt do localStorage (Supabase indisponível).");
+     } else {
+        console.log("Usando prompt padrão (Supabase indisponível, nenhum prompt no localStorage).");
+     }
+  }
 
   // Tentativa de buscar do Supabase
   if (supabase) {
