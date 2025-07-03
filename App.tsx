@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar'; 
@@ -114,7 +113,6 @@ const AppContent: React.FC = () => {
           id: 'admin_fixed_user',
           nome: 'Administrador',
           tipo: 'admin',
-          // avatarUrl: '/logo.png' // REMOVIDO
         };
         setCurrentUser(adminUser);
         localStorage.setItem(LOCAL_STORAGE_CURRENT_USER_KEY, JSON.stringify(adminUser));
@@ -136,7 +134,7 @@ const AppContent: React.FC = () => {
       try {
         const { data: consultantData, error: fetchError } = await supabase
           .from(TABLE_USUARIOS)
-          .select('id, nome, email, tipo, password, criado_em') // Removido avatarUrl da seleção
+          .select('id, nome, email, tipo, password, criado_em')
           .eq('nome', usernameOrAdminKeyword)
           .eq('tipo', 'consultor')
           .single();
@@ -154,7 +152,6 @@ const AppContent: React.FC = () => {
             nome: consultantData.nome,
             tipo: consultantData.tipo as 'consultor', // Ensure correct type
             email: consultantData.email,
-            // avatarUrl: consultantData.avatarUrl, // REMOVIDO
             criado_em: consultantData.criado_em,
           };
           setCurrentUser(consultantAppUser);
@@ -228,7 +225,7 @@ const AppContent: React.FC = () => {
   }, [location, currentUser, navigate]);
   
   const appContainerClass = `min-h-screen flex text-[var(--color-text)] ${currentUser ? 'flex-row' : 'flex-col'}`;
-  const mainContentAreaClass = `flex-1 flex flex-col overflow-y-auto ${currentUser && isSimulatorPage && isSmallScreen ? 'p-0' : 'p-4 md:p-6 lg:p-8'}`;
+  const mainContentAreaClass = `flex-1 flex flex-col overflow-y-auto custom-scrollbar ${currentUser && isSimulatorPage && isSmallScreen ? 'p-0' : 'p-4 md:p-6 lg:p-8'} ${isSmallScreen ? 'main-content-mobile' : ''}`;
   const contentWrapperClass = currentUser 
     ? (isSimulatorPage ? 'flex-grow w-full' : 'flex-grow container mx-auto w-full') 
     : 'flex-grow flex flex-col items-center justify-center w-full';
@@ -246,9 +243,13 @@ const AppContent: React.FC = () => {
       {currentUser && ( 
         <>
           <button
-            className="fixed top-3 left-3 z-40 md:hidden themed-button !p-2 !px-3 !rounded-md !bg-[var(--color-surface)] !text-[var(--color-text)] !border-[var(--color-border)] hover:!bg-[var(--color-border)]"
-            onClick={toggleMobileMenu} aria-label="Abrir menu" aria-expanded={isMobileMenuOpen}
-          > <i className="fas fa-bars text-lg"></i> </button>
+            className="mobile-menu-button md:hidden"
+            onClick={toggleMobileMenu} 
+            aria-label="Abrir menu" 
+            aria-expanded={isMobileMenuOpen}
+          > 
+            <i className="fas fa-bars"></i> 
+          </button>
           {isMobileMenuOpen && isSmallScreen && (
             <div className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm md:hidden" onClick={toggleMobileMenu} aria-label="Fechar menu"></div>
           )}
