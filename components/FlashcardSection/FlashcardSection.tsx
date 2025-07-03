@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { FlashcardContent } from '../../types';
@@ -199,11 +198,11 @@ const FlashcardSection: React.FC = () => {
           <GlassButton
             onClick={() => handleGenerateCard()}
             disabled={isLoading || !apiKeyAvailable}
-            className="next-card-button w-full mt-4 md:mt-0 md:w-[100px] h-[60px] flex flex-col items-center justify-center text-sm self-center md:self-auto"
+            className="next-card-button w-full mt-4 md:mt-0 md:w-[100px] h-[60px] flex flex-col items-center justify-center text-sm self-center md:self-auto gap-1"
             title="Gerar novo card aleatório"
             aria-label="Gerar novo flashcard"
           >
-            {isLoading ? <LoadingSpinner size="sm" /> : (<><i className="fas fa-wand-magic-sparkles text-xl mb-1"></i><span>Novo Card</span></>)}
+            {isLoading ? <LoadingSpinner size="sm" /> : (<><i className="fas fa-wand-magic-sparkles text-lg"></i><span className="text-xs leading-tight">Novo Card</span></>)}
           </GlassButton>
         </div>
 
