@@ -41,15 +41,9 @@ const Flashcard: React.FC<FlashcardProps> = ({
       return <div className={textAlignClass}>{content}</div>;
     }
     
-    let htmlContent = content;
-    htmlContent = htmlContent.replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<strong>$1$2</strong>');
-    htmlContent = htmlContent.replace(/\*(.*?)\*|_(.*?)_/g, '<em>$1$2</em>');
-    htmlContent = htmlContent.replace(/\n/g, '<br />');
-    
+    // Exibir quebras de linha reais
     const textAlignClass = side === 'front' ? 'text-center' : 'text-left';
-
-    // Ensure .prose styles are applied and max-width allows content to fill card.
-    return <div className={`prose prose-sm max-w-none ${textAlignClass} w-full text-[var(--text-primary)]`} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    return <div className={`prose prose-sm max-w-none ${textAlignClass} w-full text-[var(--text-primary)]`} style={{ whiteSpace: 'pre-line' }}>{content}</div>;
   };
 
   // Animação de pilha e flip
