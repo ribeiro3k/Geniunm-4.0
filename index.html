@@ -706,6 +706,7 @@
       cursor: pointer;
       margin: 0 auto;
       position: relative;
+      overflow: hidden;
     }
     .flashcard-inner {
       width: 100%;
@@ -714,12 +715,10 @@
       transform-style: preserve-3d;
       transition: transform 0.999s cubic-bezier(0.4,0.2,0.2,1);
     }
-    .flashcard-main.flipped .flashcard-inner {
-      transform: rotateY(180deg);
-    }
     .flashcard-front,
     .flashcard-back {
       position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
@@ -732,20 +731,23 @@
       padding: 24px;
       box-shadow: var(--shadow-lg);
       z-index: 1;
+      overflow: hidden;
     }
     .flashcard-front {
       background-color: #6A2C70;
       color: #fff;
       border: 8px solid #6A2C70;
       transform: rotateY(0deg);
+      z-index: 2;
     }
     .flashcard-back {
       background-color: #F08A5D;
       color: #fff;
       border: 8px solid #F08A5D;
       transform: rotateY(180deg);
+      z-index: 1;
+      overflow-y: auto;
     }
-    /* Ajuste para modo escuro */
     [data-theme="dark"] .flashcard-front {
       background-color: #3D405B;
       border-color: #3D405B;
@@ -756,7 +758,6 @@
       border-color: #22223B;
       color: #fff;
     }
-    /* Botão de copiar no card */
     .copy-button {
       position: absolute;
       bottom: 12px;
@@ -769,7 +770,7 @@
       cursor: pointer;
       font-size: 16px;
       transition: background 0.2s;
-      z-index: 2;
+      z-index: 3;
     }
     .copy-button:hover {
       background: rgba(0,0,0,0.28);
