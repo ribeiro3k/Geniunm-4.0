@@ -46,3 +46,30 @@ export async function fetchUserFlashcardProgress(user_id: string): Promise<UserF
   if (error) throw error;
   return data as UserFlashcardProgress[];
 }
+
+export async function upsertUserFlashcardProgress(user_id: string, flashcard_id: string) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from(TABLE_FLASHCARD_PROGRESS)
+    .upsert([
+      {
+        user_id,
+        flashcard_id,
+        last_viewed_at: new Date().toISOString(),
+        completed: true
+      }
+    ], { onConflict: 'user_id,flashcard_id' });
+  if (error) throw error;
+  return data;
+}
+
+export async function setFlashcardFavorite(user_id: string, flashcard_id: string, is_favorite: boolean) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from(TABLE_FLASHCARD_PROGRESS)
+    .upsert([
+      { user_id, flashcard_id, is_favorite }
+    ], { onConflict: 'user_id,flashcard_id' });
+  if (error) throw error;
+  return data;
+}
