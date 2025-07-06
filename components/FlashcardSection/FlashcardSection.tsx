@@ -10,7 +10,7 @@ import GlassButton from '../ui/GlassButton';
 import GlassCard from '../ui/GlassCard';
 import AnimatedLoadingText from '../ui/AnimatedLoadingText';
 import ProgressBar from '../ui/ProgressBar';
-import { useTheme } from '../ui/useTheme';
+import { useTheme } from '../ui/useTheme.ts';
 import { fetchFlashcardsByTheme } from '../../lib/supabaseClient';
 import { SupabaseFlashcard } from '../../types';
 
@@ -39,7 +39,7 @@ const FlashcardSection: React.FC = () => {
   const tempDivRef = useRef<HTMLDivElement | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
-  const { theme } = useTheme ? useTheme() : { theme: 'light' };
+  const { theme } = useTheme();
   const [deckCards, setDeckCards] = useState<SupabaseFlashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -270,7 +270,10 @@ const FlashcardSection: React.FC = () => {
                     <i className="fas fa-copy"></i>
                   </button>
                   <span className={`text-xs mb-2 self-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Pergunta</span>
-                  <div className={`text-xl md:text-2xl font-semibold text-center min-h-[60px] flex items-center justify-center ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>
+                  <div 
+                    className={`text-xl md:text-2xl font-semibold text-center min-h-[60px] flex items-center justify-center ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}
+                    style={{ whiteSpace: 'pre-line' }}
+                  >
                     {!isFlipped ? deckCards[currentIndex].front : deckCards[currentIndex].back}
                   </div>
                 </div>
