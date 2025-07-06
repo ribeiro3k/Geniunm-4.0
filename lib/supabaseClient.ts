@@ -73,3 +73,23 @@ export async function setFlashcardFavorite(user_id: string, flashcard_id: string
   if (error) throw error;
   return data;
 }
+
+export async function fetchFavoriteFlashcards(user_id: string): Promise<SupabaseFlashcard[]> {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  // Primeiro busca os IDs dos flashcards favoritos
+  const { data: progress, error: errorProgress } = await supabase
+    .from(TABLE_FLASHCARD_PROGRESS)
+    .select('flashcard_id')
+    .eq('user_id', user_id)
+    .eq('is_favorite', true);
+  if (errorProgress) throw errorProgress;
+  const ids = (progress ?? []).map((p: any) => p.flashcard_id);
+  if (ids.length === 0) return [];
+  // Busca os flashcards por esses IDs
+  const { data, error } = await supabase
+    .from(TABLE_FLASHCARDS)
+    .select('*')
+    .in('id', ids);
+  if (error) throw error;
+  return data as SupabaseFlashcard[];
+}

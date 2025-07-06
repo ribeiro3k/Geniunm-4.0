@@ -11,11 +11,11 @@ import GlassCard from '../ui/GlassCard';
 import AnimatedLoadingText from '../ui/AnimatedLoadingText';
 import ProgressBar from '../ui/ProgressBar';
 import { useTheme } from '../ui/useTheme.ts';
-import { fetchFlashcardsByTheme, upsertUserFlashcardProgress, fetchUserFlashcardProgress, setFlashcardFavorite } from '../../lib/supabaseClient';
+import { fetchFlashcardsByTheme, upsertUserFlashcardProgress, fetchUserFlashcardProgress, setFlashcardFavorite, fetchFavoriteFlashcards } from '../../lib/supabaseClient';
 import { SupabaseFlashcard, UserFlashcardProgress } from '../../types';
 
 // Modal de celebração com tema
-const CelebrationModal = ({ onClose, onRestart, theme }: { onClose: () => void, onRestart: () => void, theme: 'light' | 'dark' }) => (
+const CelebrationModal = ({ onClose, onRestart, theme, nextDeck, onNextDeck }: { onClose: () => void, onRestart: () => void, theme: 'light' | 'dark', nextDeck: string, onNextDeck: () => void }) => (
   <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
     <div className={`rounded-2xl p-8 shadow-2xl text-center max-w-xs border transition-colors duration-300 ${theme === 'dark' ? 'bg-[#232733] text-white border-[#2d3240]' : 'bg-white text-[var(--accent-primary)] border-gray-200'}`}>
       <h3 className="text-2xl font-bold mb-2">Parabéns!</h3>
@@ -23,6 +23,7 @@ const CelebrationModal = ({ onClose, onRestart, theme }: { onClose: () => void, 
       <div className="flex flex-col gap-2 mt-4">
         <button onClick={onRestart} className={`px-4 py-2 rounded-lg font-semibold transition ${theme === 'dark' ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>Reiniciar Deck</button>
         <button onClick={onClose} className={`px-4 py-2 rounded-lg font-semibold transition ${theme === 'dark' ? 'bg-[#181c23] text-white hover:bg-[#232733]' : 'bg-gray-200 text-[var(--accent-primary)] hover:bg-gray-300'}`}>Escolher Outro Deck</button>
+        <button onClick={onNextDeck} className={`px-4 py-2 rounded-lg font-semibold transition ${theme === 'dark' ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>Avançar para o próximo deck</button>
       </div>
     </div>
   </div>
@@ -44,6 +45,7 @@ const FlashcardSection: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userProgress, setUserProgress] = useState<UserFlashcardProgress[]>([]);
   const [userId, setUserId] = useState<string>(''); // TODO: Integrar com autenticação real
+  const [favoriteCards, setFavoriteCards] = useState<SupabaseFlashcard[]>([]);
 
   // Simular progresso por deck (futuro: integrar com backend/estado real)
   const getDeckProgress = (theme: string) => 0; // TODO: integrar progresso real
@@ -197,6 +199,15 @@ const FlashcardSection: React.FC = () => {
     }
   }, [selectedDeck, userId]);
 
+  // Buscar favoritos ao carregar tela de seleção
+  useEffect(() => {
+    if (userId && !selectedDeck) {
+      fetchFavoriteFlashcards(userId)
+        .then(setFavoriteCards)
+        .catch(() => setFavoriteCards([]));
+    }
+  }, [userId, selectedDeck]);
+
   // Salvar progresso ao avançar para o próximo card
   const handleNextCard = async () => {
     if (deckCards.length > 0 && userId) {
@@ -242,6 +253,26 @@ const FlashcardSection: React.FC = () => {
     } catch {}
   };
 
+  // Ao selecionar o deck Favoritos, mostrar apenas os favoritos:
+  useEffect(() => {
+    if (selectedDeck === 'Favoritos' && userId) {
+      setIsLoading(true);
+      fetchFavoriteFlashcards(userId)
+        .then(cards => {
+          setDeckCards(cards);
+          setCurrentIndex(0);
+          setIsFlipped(false);
+          setIsLoading(false);
+        })
+        .catch(() => {
+          setDeckCards([]);
+          setCurrentIndex(0);
+          setIsFlipped(false);
+          setIsLoading(false);
+        });
+    }
+  }, [selectedDeck, userId]);
+
   // Se nenhum deck foi selecionado, mostrar seleção de decks
   if (!selectedDeck) {
     return (
@@ -262,6 +293,16 @@ const FlashcardSection: React.FC = () => {
                 <span className={`text-xs mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-[var(--text-secondary)]'}`}>0% concluído</span>
               </button>
             ))}
+            {favoriteCards.length > 0 && (
+              <button
+                className={`flex flex-col items-center justify-center p-8 rounded-2xl shadow-xl hover:shadow-2xl transition border min-h-[180px] focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white border-yellow-300 text-yellow-600`}
+                onClick={() => setSelectedDeck('Favoritos')}
+              >
+                <div className="text-5xl mb-3">⭐</div>
+                <div className="font-bold text-lg mb-2 text-center">Favoritos</div>
+                <span className="text-xs mt-2">{favoriteCards.length} cards</span>
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -269,6 +310,11 @@ const FlashcardSection: React.FC = () => {
   }
 
   // TELA DE ESTUDO - MODO FOCO ESCURO/CLARO
+  const deckList = [...FLASHCARD_THEMES];
+  if (favoriteCards.length > 0) deckList.push('Favoritos');
+  const currentDeckIndex = deckList.findIndex(d => d === selectedDeck);
+  const nextDeck = deckList[(currentDeckIndex + 1) % deckList.length];
+
   return (
     <section id="flashcards" className="min-h-screen flex flex-col items-center justify-center transition-colors duration-300 bg-transparent">
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center">
@@ -310,12 +356,11 @@ const FlashcardSection: React.FC = () => {
                   >
                     <i className="fas fa-copy"></i>
                   </button>
-                  <span className={`text-xs mb-2 self-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Pergunta</span>
-                  <div 
-                    className={`text-xl md:text-2xl font-semibold text-left min-h-[60px] flex items-center ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}
-                    style={{ whiteSpace: 'pre-line' }}
-                  >
-                    {!isFlipped ? deckCards[currentIndex].front : deckCards[currentIndex].back}
+                  <div className="flex items-center mb-2 self-start gap-2">
+                    <span className={`text-xl md:text-2xl font-semibold text-left min-h-[60px] flex items-center ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}
+                      style={{ whiteSpace: 'pre-line' }}>
+                      {!isFlipped ? deckCards[currentIndex].front : deckCards[currentIndex].back}
+                    </span>
                   </div>
                 </div>
                 {/* Botões abaixo do card */}
@@ -327,22 +372,19 @@ const FlashcardSection: React.FC = () => {
                   >
                     <i className="fas fa-arrow-left"></i> Voltar
                   </button>
-                  {!isFlipped && (
-                    <button
-                      onClick={() => setIsFlipped(true)}
-                      className={`px-8 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                    >
-                      VIRAR CARTA
-                    </button>
-                  )}
-                  {isFlipped && (
-                    <button
-                      onClick={handleNextCard}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-green-500 text-white hover:bg-green-600'}`}
-                    >
-                      Continuar <i className="fas fa-arrow-right"></i>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setIsFlipped(!isFlipped)}
+                    className={`px-8 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                  >
+                    VIRAR CARTA
+                  </button>
+                  <button
+                    onClick={handleNextCard}
+                    disabled={currentIndex === deckCards.length - 1}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-lg shadow transition ${currentIndex === deckCards.length - 1 ? 'opacity-50 cursor-not-allowed' : theme === 'dark' ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                  >
+                    Próximo <i className="fas fa-arrow-right"></i>
+                  </button>
                 </div>
               </div>
             )}
@@ -353,13 +395,29 @@ const FlashcardSection: React.FC = () => {
             )}
           </div>
         </div>
-        {showCelebration && <CelebrationModal onClose={() => setSelectedDeck(null)} onRestart={() => setCurrentIndex(0)} theme={theme} />}
+        {showCelebration && (
+          <CelebrationModal
+            onClose={() => setSelectedDeck(null)}
+            onRestart={() => setCurrentIndex(0)}
+            theme={theme}
+            nextDeck={nextDeck}
+            onNextDeck={() => {
+              setSelectedDeck(nextDeck);
+              setShowCelebration(false);
+              setCurrentIndex(0);
+              setIsFlipped(false);
+            }}
+          />
+        )}
         {/* Selo visual de deck completo */}
         {allSeen && (
           <div className="flex items-center gap-2 mb-4">
             <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-600 text-white text-xs font-bold shadow">Deck completo <i className="fas fa-check-circle ml-1"></i></span>
           </div>
         )}
+        <div className="w-full flex justify-center mt-4">
+          <span className="text-xs text-gray-400 text-center max-w-xs">Leia a frente do card, depois vire para ver a resposta/dica.</span>
+        </div>
       </div>
     </section>
   );
