@@ -660,7 +660,8 @@ export const LOCAL_STORAGE_SIMULATION_RECORDS_KEY = 'geniunmSimulationRecords';
 export const TABLE_USUARIOS = 'usuarios'; // Reflete a tabela no Supabase
 export const TABLE_SIMULACOES = 'simulacoes';
 export const TABLE_QUIZZES = 'quizzes';
-export const TABLE_FLASHCARDS = 'flashcards'; // Supondo que você possa querer salvar flashcards gerados no futuro
+export const TABLE_FLASHCARDS = 'flashcards';
+export const TABLE_FLASHCARD_PROGRESS = 'flashcard_progress';
 export const TABLE_FEEDBACKS = 'feedbacks';   // Supondo que você possa querer salvar feedbacks das simulações
 export const TABLE_CONFIGURACOES_IA = 'configuracoes_ia_simulador'; // Nova tabela para IA config
 

@@ -11,6 +11,8 @@ import GlassCard from '../ui/GlassCard';
 import AnimatedLoadingText from '../ui/AnimatedLoadingText';
 import ProgressBar from '../ui/ProgressBar';
 import { useTheme } from '../ui/useTheme';
+import { fetchFlashcardsByTheme } from '../../lib/supabaseClient';
+import { SupabaseFlashcard } from '../../types';
 
 // Modal de celebração com tema
 const CelebrationModal = ({ onClose, onRestart, theme }: { onClose: () => void, onRestart: () => void, theme: 'light' | 'dark' }) => (
@@ -38,6 +40,8 @@ const FlashcardSection: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
   const { theme } = useTheme ? useTheme() : { theme: 'light' };
+  const [deckCards, setDeckCards] = useState<SupabaseFlashcard[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   // Simular progresso por deck (futuro: integrar com backend/estado real)
   const getDeckProgress = (theme: string) => 0; // TODO: integrar progresso real
@@ -160,15 +164,41 @@ const FlashcardSection: React.FC = () => {
     }
   };
 
-  // Avançar para o próximo card
+  // Buscar flashcards do Supabase ao selecionar um deck
+  useEffect(() => {
+    if (selectedDeck) {
+      setIsLoading(true);
+      fetchFlashcardsByTheme(selectedDeck)
+        .then(cards => {
+          setDeckCards(cards);
+          setCurrentIndex(0);
+          setIsFlipped(false);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          setError('Erro ao buscar flashcards do banco.');
+          setIsLoading(false);
+        });
+    } else {
+      setDeckCards([]);
+      setCurrentIndex(0);
+      setIsFlipped(false);
+    }
+  }, [selectedDeck]);
+
+  // Navegação dos cards
   const handleNextCard = () => {
-    if (history.length > 0) {
-      const [next, ...rest] = history;
-      setCurrentCard(next);
-      setHistory(rest);
+    if (currentIndex < deckCards.length - 1) {
+      setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);
     } else {
       setShowCelebration(true);
+    }
+  };
+  const handlePrevCard = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setIsFlipped(false);
     }
   };
 
@@ -218,17 +248,22 @@ const FlashcardSection: React.FC = () => {
         </div>
         <div className="w-full flex flex-col items-center mb-6 mt-4">
           <h2 className={`text-2xl md:text-3xl font-bold mb-2 text-center drop-shadow ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Trilha: {selectedDeck}</h2>
-          <ProgressBar value={(history.length + 1) / 6} height={10} color={theme === 'dark' ? '#3b82f6' : 'var(--accent-primary)'} className="w-full max-w-lg mb-2" />
-          <span className={`${theme === 'dark' ? 'text-white/80' : 'text-[var(--accent-primary)]'} text-sm mb-2`}>Card {history.length + 1} de 6</span>
+          <ProgressBar value={deckCards.length ? (currentIndex + 1) / deckCards.length : 0} height={10} color={theme === 'dark' ? '#3b82f6' : 'var(--accent-primary)'} className="w-full max-w-lg mb-2" />
+          <span className={`${theme === 'dark' ? 'text-white/80' : 'text-[var(--accent-primary)]'} text-sm mb-2`}>Card {deckCards.length ? currentIndex + 1 : 0} de {deckCards.length}</span>
         </div>
         <div className="relative w-full flex flex-col items-center justify-center">
           <div className="w-full flex flex-col items-center justify-center">
-            {currentCard && !isLoading && (
+            {isLoading && (
+              <div className={`rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
+                <span className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Carregando...</span>
+              </div>
+            )}
+            {!isLoading && deckCards.length > 0 && (
               <div className="w-full flex flex-col items-center justify-center">
                 <div className={`relative rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
                   {/* Botão copiar canto superior direito */}
                   <button
-                    onClick={(e) => handleCopy(e, !isFlipped ? currentCard.front : currentCard.back, isFlipped ? 'back' : 'front')}
+                    onClick={(e) => copyToClipboard(!isFlipped ? deckCards[currentIndex].front : deckCards[currentIndex].back, isFlipped ? 'back' : 'front')}
                     className={`absolute top-3 right-3 p-2 rounded-full shadow text-lg ${theme === 'dark' ? 'bg-[#181c23] text-white hover:bg-[#232733]' : 'bg-gray-100 text-[var(--accent-primary)] hover:bg-gray-200'}`}
                     title="Copiar conteúdo do card"
                   >
@@ -236,21 +271,18 @@ const FlashcardSection: React.FC = () => {
                   </button>
                   <span className={`text-xs mb-2 self-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Pergunta</span>
                   <div className={`text-xl md:text-2xl font-semibold text-center min-h-[60px] flex items-center justify-center ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>
-                    {!isFlipped ? currentCard.front : currentCard.back}
+                    {!isFlipped ? deckCards[currentIndex].front : deckCards[currentIndex].back}
                   </div>
                 </div>
                 {/* Botões abaixo do card */}
                 <div className="flex gap-4 mt-8 w-full justify-center items-center">
-                  {/* Botão voltar card (só se não for o primeiro) */}
-                  {history.length < 5 && (
-                    <button
-                      onClick={() => setIsFlipped(false)}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-[#232733] text-white hover:bg-[#2d3240]' : 'bg-white text-[var(--accent-primary)] hover:bg-gray-100'}`}
-                    >
-                      <i className="fas fa-arrow-left"></i> Voltar
-                    </button>
-                  )}
-                  {/* Botão virar carta centralizado */}
+                  <button
+                    onClick={handlePrevCard}
+                    disabled={currentIndex === 0}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-lg shadow transition ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : theme === 'dark' ? 'bg-[#232733] text-white hover:bg-[#2d3240]' : 'bg-white text-[var(--accent-primary)] hover:bg-gray-100'}`}
+                  >
+                    <i className="fas fa-arrow-left"></i> Voltar
+                  </button>
                   {!isFlipped && (
                     <button
                       onClick={() => setIsFlipped(true)}
@@ -259,7 +291,6 @@ const FlashcardSection: React.FC = () => {
                       VIRAR CARTA
                     </button>
                   )}
-                  {/* Botão continuar/próximo à direita */}
                   {isFlipped && (
                     <button
                       onClick={handleNextCard}
@@ -271,16 +302,14 @@ const FlashcardSection: React.FC = () => {
                 </div>
               </div>
             )}
-            {isLoading && (
-              <div className="w-full flex flex-col items-center justify-center">
-                <div className={`rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
-                  <span className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Carregando...</span>
-                </div>
+            {!isLoading && deckCards.length === 0 && (
+              <div className={`rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
+                <span className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Nenhum flashcard encontrado para este deck.</span>
               </div>
             )}
           </div>
         </div>
-        {showCelebration && <CelebrationModal onClose={() => setSelectedDeck(null)} onRestart={handleRestartDeck} theme={theme} />}
+        {showCelebration && <CelebrationModal onClose={() => setSelectedDeck(null)} onRestart={() => setCurrentIndex(0)} theme={theme} />}
       </div>
     </section>
   );

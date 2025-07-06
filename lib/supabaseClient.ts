@@ -1,5 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_ERROR_MESSAGE } from '../constants';
+import { TABLE_FLASHCARDS, TABLE_FLASHCARD_PROGRESS } from '../constants';
+import { SupabaseFlashcard, UserFlashcardProgress } from '../types';
 
 // Access Supabase URL and Anon Key using import.meta.env for Vite compatibility
 // The user must ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in their Vercel environment.
@@ -23,3 +25,24 @@ if (supabaseUrl && supabaseAnonKey) {
 }
 
 export const supabase = supabaseInstance;
+
+export async function fetchFlashcardsByTheme(theme: string): Promise<SupabaseFlashcard[]> {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from(TABLE_FLASHCARDS)
+    .select('*')
+    .eq('theme', theme)
+    .order('ordem', { ascending: true });
+  if (error) throw error;
+  return data as SupabaseFlashcard[];
+}
+
+export async function fetchUserFlashcardProgress(user_id: string): Promise<UserFlashcardProgress[]> {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from(TABLE_FLASHCARD_PROGRESS)
+    .select('*')
+    .eq('user_id', user_id);
+  if (error) throw error;
+  return data as UserFlashcardProgress[];
+}

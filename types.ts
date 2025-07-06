@@ -304,3 +304,22 @@ export interface GeneratedReport {
   generatedAt: string; // ISO Date string
   summaryInsights?: string; // Simple text insights
 }
+
+export interface SupabaseFlashcard {
+  id: string; // UUID
+  theme: string;
+  front: string;
+  back: string;
+  ordem?: number; // ordem no deck
+  created_at?: string;
+}
+
+export interface UserFlashcardProgress {
+  id: string; // UUID
+  user_id: string;
+  flashcard_id: string;
+  is_favorite: boolean;
+  last_viewed_at?: string;
+  times_viewed?: number;
+  completed?: boolean;
+}
