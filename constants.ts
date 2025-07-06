@@ -22,7 +22,6 @@ export const NAV_ITEMS: NavItem[] = [
     section: NavigationSection.Simulador,
     icon: "fa-comments",
   },
-  { href: "#/objection-trainer", label: "Treinar Objeções", section: NavigationSection.ObjectionTrainer, icon: "fa-microphone-alt" },
   { href: "#/admin-panel", label: "Painel Admin", section: NavigationSection.AdminPanel, adminOnly: true, icon: "fa-tachometer-alt" },
   { href: "#/user-management", label: "Gerenciar Usuários", section: NavigationSection.UserManagement, adminOnly: true, icon: "fa-users-cog" },
   { href: "#/reports", label: "Relatórios", section: NavigationSection.Reports, adminOnly: true, icon: "fa-chart-pie" },
@@ -78,7 +77,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
       { id: 'q2_opt1', text: "Enviar áudios curtos de até 45 segundos" },
       { id: 'q2_opt2', text: "Escrever textos longos e sem estratégia", correct: true },
       { id: 'q2_opt3', text: "Finalizar com uma pergunta objetiva" },
-      { id: 'q2_opt4', text: "Mandar só “Oi, tudo bem?” como follow-up", correct: true },
+      { id: 'q2_opt4', text: 'Mandar só "Oi, tudo bem?" como follow-up', correct: true },
     ],
     feedback: "Não se deve escrever textos longos e sem estratégia, nem mandar follow-ups genéricos como 'Oi, tudo bem?'. Áudios curtos e perguntas objetivas são boas práticas.",
     topicTags: ["boas_praticas_whatsapp", "comunicacao_escrita", "follow_up"],
@@ -158,7 +157,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
   },
   {
     id: 8,
-    text: "Preencha a lacuna: “O curso não é um ____, é um investimento no seu futuro.”",
+    text: "Preencha a lacuna: \"O curso não é um ____, é um investimento no seu futuro.\"",
     type: 'multiple-choice',
     options: [
       { id: 'q8_opt1', text: "Compromisso" },
@@ -169,7 +168,7 @@ export const QUIZ_QUESTIONS: QuizQuestionType[] = [
   },
   {
     id: 9,
-    text: "O que fazer quando o candidato diz “Vou pensar”?",
+    text: "O que fazer quando o candidato diz \"Vou pensar\"?",
     type: 'multiple-choice',
     options: [
       { id: 'q9_opt1', text: "Agradecer e aguardar" },
@@ -436,9 +435,9 @@ Use EXATAMENTE a seguinte estrutura Markdown para a sua avaliação:
 
 🚨 1. PRINCIPAIS ERROS QUE ATRAPALHARAM A VENDA
 Erro 1 – [Título do Erro. Ex: Indicou curso errado]
-[Descrição do erro, com exemplo da conversa se possível, e impacto. Ex: A cliente disse que quer trabalhar com crianças e pensou em Pedagogia. Mesmo assim, o consultor falou para ela fazer “Gestão Comercial”. Isso fez a cliente ficar confusa e desconfiada.]
+[Descrição do erro, com exemplo da conversa se possível, e impacto. Ex: A cliente disse que quer trabalhar com crianças e pensou em Pedagogia. Mesmo assim, o consultor falou para ela fazer "Gestão Comercial". Isso fez a cliente ficar confusa e desconfiada.]
 Erro 2 – [Título do Erro. Ex: Não perguntou mais sobre o interesse da cliente]
-[Descrição do erro, com exemplo da conversa se possível, e impacto. Ex: Depois que a cliente confirmou que queria Pedagogia, o consultor só falou: “É, é verdade, isso é melhor pra você.” Ele não perguntou por que ela escolheu esse curso ou o que ela espera dele. Perdeu a chance de criar uma conexão.]
+[Descrição do erro, com exemplo da conversa se possível, e impacto. Ex: Depois que a cliente confirmou que queria Pedagogia, o consultor só falou: "É, é verdade, isso é melhor pra você." Ele não perguntou por que ela escolheu esse curso ou o que ela espera dele. Perdeu a chance de criar uma conexão.]
 (Adicione mais erros conforme necessário, seguindo o formato "Erro X – [Título]\n[Descrição]")
 
 ✅ 2. PONTO POSITIVO (Se houver)
@@ -476,11 +475,11 @@ Fechamento: [Avaliação. Ex: Nem tentou avançar na venda]
 💡 6. COMO MELHORAR: PASSOS PRÁTICOS
 [Pelo menos 2-3 sugestões concretas e acionáveis, com exemplos de frases se aplicável.]
 Exemplo 1: Ouça com atenção: Quando o cliente fala o que quer, confirme e pergunte mais:
-“Que legal que você quer trabalhar com crianças! O que te atrai nessa área?”
+"Que legal que você quer trabalhar com crianças! O que te atrai nessa área?"
 Exemplo 2: Conecte o curso ao sonho e rotina dele:
-“O curso de Pedagogia EAD é feito para quem precisa de flexibilidade e quer atuar em escolas, creches e muito mais.”
+"O curso de Pedagogia EAD é feito para quem precisa de flexibilidade e quer atuar em escolas, creches e muito mais."
 Exemplo 3: Responda dúvidas importantes:
-“Sei que é difícil conciliar tudo, mas o nosso EAD permite que você estude no seu tempo, com apoio dos tutores, materiais online e avaliações também online. Quer que eu explique como funciona na prática?”
+"Sei que é difícil conciliar tudo, mas o nosso EAD permite que você estude no seu tempo, com apoio dos tutores, materiais online e avaliações também online. Quer que eu explique como funciona na prática?"
 
 📌 7. RESUMO FINAL
 [Conclusão geral da performance em 2-3 frases, focando no impacto dos erros e no potencial de melhoria.]

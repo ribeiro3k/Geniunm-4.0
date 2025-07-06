@@ -541,7 +541,7 @@
     }
 
     [data-theme="dark"] .theme-toggle {
-      animation: float 6s ease-in-out infinite;
+      animation: none !important;
     }
 
     /* Shimmer Effect for Buttons */
@@ -1071,6 +1071,17 @@
     
     .flashcard-main.flipped .flashcard-inner {
       transform: rotateY(180deg);
+    }
+
+    /* Animação sutil de rotação para lua e sol */
+    .theme-toggle i {
+      transition: transform 0.4s cubic-bezier(0.4,0.2,0.2,1);
+    }
+    .theme-toggle:hover i.fa-moon {
+      transform: rotate(-18deg);
+    }
+    .theme-toggle:hover i.fa-sun {
+      transform: rotate(18deg);
     }
   </style>
 

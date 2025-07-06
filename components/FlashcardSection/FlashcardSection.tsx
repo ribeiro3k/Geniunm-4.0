@@ -9,6 +9,22 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 import GlassButton from '../ui/GlassButton';
 import GlassCard from '../ui/GlassCard';
 import AnimatedLoadingText from '../ui/AnimatedLoadingText';
+import ProgressBar from '../ui/ProgressBar';
+import { useTheme } from '../ui/useTheme';
+
+// Modal de celebração com tema
+const CelebrationModal = ({ onClose, onRestart, theme }: { onClose: () => void, onRestart: () => void, theme: 'light' | 'dark' }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className={`rounded-2xl p-8 shadow-2xl text-center max-w-xs border transition-colors duration-300 ${theme === 'dark' ? 'bg-[#232733] text-white border-[#2d3240]' : 'bg-white text-[var(--accent-primary)] border-gray-200'}`}>
+      <h3 className="text-2xl font-bold mb-2">Parabéns!</h3>
+      <p className="mb-4">Você concluiu todos os cards deste deck!</p>
+      <div className="flex flex-col gap-2 mt-4">
+        <button onClick={onRestart} className={`px-4 py-2 rounded-lg font-semibold transition ${theme === 'dark' ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>Reiniciar Deck</button>
+        <button onClick={onClose} className={`px-4 py-2 rounded-lg font-semibold transition ${theme === 'dark' ? 'bg-[#181c23] text-white hover:bg-[#232733]' : 'bg-gray-200 text-[var(--accent-primary)] hover:bg-gray-300'}`}>Escolher Outro Deck</button>
+      </div>
+    </div>
+  </div>
+);
 
 const FlashcardSection: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<FlashcardContent | null>(null);
@@ -19,7 +35,12 @@ const FlashcardSection: React.FC = () => {
   const [apiKeyAvailable, setApiKeyAvailable] = useState(true); // Default to true, error handling will manage if key is actually missing via service.
   const [copiedSide, setCopiedSide] = useState<'front' | 'back' | null>(null);
   const tempDivRef = useRef<HTMLDivElement | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
+  const { theme } = useTheme ? useTheme() : { theme: 'light' };
 
+  // Simular progresso por deck (futuro: integrar com backend/estado real)
+  const getDeckProgress = (theme: string) => 0; // TODO: integrar progresso real
 
   const handleGenerateCard = useCallback(async (theme?: string) => {
     // The apiKeyAvailable check here is mostly for subsequent manual calls.
@@ -139,97 +160,128 @@ const FlashcardSection: React.FC = () => {
     }
   };
 
+  // Avançar para o próximo card
+  const handleNextCard = () => {
+    if (history.length > 0) {
+      const [next, ...rest] = history;
+      setCurrentCard(next);
+      setHistory(rest);
+      setIsFlipped(false);
+    } else {
+      setShowCelebration(true);
+    }
+  };
 
+  // Reiniciar o deck atual
+  const handleRestartDeck = () => {
+    setShowCelebration(false);
+    setIsFlipped(false);
+    setHistory([]);
+    handleGenerateCard(selectedDeck!);
+  };
+
+  // Se nenhum deck foi selecionado, mostrar seleção de decks
+  if (!selectedDeck) {
+    return (
+      <section id="flashcards" className={`min-h-screen flex flex-col items-center justify-center transition-colors duration-300 ${theme === 'dark' ? 'bg-[#181c23]' : 'bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]'}`}>
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
+          <h2 className={`text-3xl md:text-4xl font-bold mb-2 text-center drop-shadow ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Flashcards Interativos</h2>
+          <p className={`mb-8 text-center text-lg max-w-2xl ${theme === 'dark' ? 'text-gray-300' : 'text-[var(--text-secondary)]'}`}>Escolha um deck de aprendizado para começar sua jornada.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 w-full px-2 md:px-0">
+            {FLASHCARD_THEMES.slice(0, 6).map((themeName) => (
+              <button
+                key={themeName}
+                className={`flex flex-col items-center justify-center p-8 rounded-2xl shadow-xl hover:shadow-2xl transition border min-h-[180px] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] ${theme === 'dark' ? 'bg-[#232733] border-[#232733] text-white' : 'bg-white border-[var(--border-color-light)] text-[var(--accent-primary)]'}`}
+                onClick={() => setSelectedDeck(themeName)}
+              >
+                <div className="text-5xl mb-3">📚</div>
+                <div className="font-bold text-lg mb-2 text-center">{themeName}</div>
+                <ProgressBar value={getDeckProgress(themeName)} height={10} className="w-full mt-3" />
+                <span className={`text-xs mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-[var(--text-secondary)]'}`}>0% concluído</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // TELA DE ESTUDO - MODO FOCO ESCURO/CLARO
   return (
-    <section id="flashcards" className="py-12 mt-8">
-      <GlassCard className="max-w-4xl mx-auto p-6 md:p-8">
-        <h2 className="section-title">Flashcards Interativos</h2>
-        <p className="mb-8 text-center text-[var(--text-secondary)] text-sm">
-          Clique no card para virar. Gere novos cards com IA sobre técnicas de vendas.
-        </p>
-        {error && !isLoading && <p className="text-[var(--error)] text-center mb-4 py-2 px-3 bg-[rgba(var(--error-rgb),0.1)] border border-[rgba(var(--error-rgb),0.3)] rounded-md">{error}</p>}
-
-        <div className="flex flex-col md:flex-row items-center md:items-start justify-center gap-6 mb-8 relative min-h-[280px]">
-          {copiedSide && currentCard && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-12 bg-[rgba(var(--success-rgb),0.9)] text-white text-xs px-3 py-1.5 rounded-md shadow-lg z-10">
-              "{copiedSide === 'front' ? currentCard.front.substring(0,20)+'...' : 'Verso'}": Copiado!
-            </div>
-          )}
-          <GlassCard className="w-full md:w-60 h-auto md:h-[250px] flex flex-col p-4 themed-surface-secondary">
-            <h4 className="text-lg font-semibold mb-3 text-[var(--accent-primary)]">Histórico</h4>
-            <div className="flashcard-history flex-grow max-h-48 md:max-h-full overflow-y-auto custom-scrollbar pr-2">
-              {history.length > 0 ? (
-                history.map((item) => (
-                  <HistoryItem key={item.id} item={item} onSelect={selectHistoryItem} />
-                ))
-              ) : (
-                <p className="text-sm text-[var(--text-secondary)] italic">Nenhum card gerado ainda.</p>
-              )}
-            </div>
-          </GlassCard>
-
-          <div className="w-[350px] h-[250px] flex items-center justify-center">
-            {isLoading && !currentCard && <LoadingSpinner text="Gerando card inicial..." />}
-            {!isLoading && !currentCard && !apiKeyAvailable && /* This condition might need adjustment if currentCard can be error card */
-              <div className="flashcard-main">
-                   <GlassCard className="flashcard-inner flex flex-col items-center justify-center p-4">
-                      <p className="text-red-400 text-center font-semibold text-lg">Chave de API Faltando</p>
-                      <p className="text-[var(--text-secondary)] text-center text-sm mt-2">{API_KEY_ERROR_MESSAGE}</p>
-                   </GlassCard>
-              </div>
-            }
+    <section id="flashcards" className={`min-h-screen flex flex-col items-center justify-center transition-colors duration-300 ${theme === 'dark' ? 'bg-[#181c23]' : 'bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]'}`}>
+      <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center">
+        {/* Botão voltar para seleção de deck */}
+        <div className="w-full flex justify-start mb-2">
+          <button onClick={() => setSelectedDeck(null)} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm shadow transition ${theme === 'dark' ? 'bg-[#232733] text-white hover:bg-[#232733]/80' : 'bg-white text-[var(--accent-primary)] hover:bg-gray-100'}`}>
+            <i className="fas fa-arrow-left"></i> Voltar para seleção de deck
+          </button>
+        </div>
+        <div className="w-full flex flex-col items-center mb-6 mt-4">
+          <h2 className={`text-2xl md:text-3xl font-bold mb-2 text-center drop-shadow ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Trilha: {selectedDeck}</h2>
+          <ProgressBar value={(history.length + 1) / 6} height={10} color={theme === 'dark' ? '#3b82f6' : 'var(--accent-primary)'} className="w-full max-w-lg mb-2" />
+          <span className={`${theme === 'dark' ? 'text-white/80' : 'text-[var(--accent-primary)]'} text-sm mb-2`}>Card {history.length + 1} de 6</span>
+        </div>
+        <div className="relative w-full flex flex-col items-center justify-center">
+          <div className="w-full flex flex-col items-center justify-center">
             {currentCard && !isLoading && (
-              <Flashcard
-                frontContent={currentCard.front}
-                backContent={currentCard.back}
-                isFlipped={isFlipped}
-                onFlip={() => setIsFlipped(!isFlipped)}
-                onCopyFront={(e) => handleCopy(e, currentCard.front, "front")}
-                onCopyBack={(e) => handleCopy(e, currentCard.back, "back")}
-              />
-            )}
-             {isLoading && currentCard && (
-                <div className="absolute w-[350px] h-[250px] bg-[rgba(var(--background-main-rgb),0.7)] backdrop-blur-sm flex flex-col items-center justify-center rounded-[var(--border-radius-large)] z-10">
-                    <AnimatedLoadingText messages={FLASHCARD_LOADING_MESSAGES} />
+              <div className="w-full flex flex-col items-center justify-center">
+                <div className={`relative rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
+                  {/* Botão copiar canto superior direito */}
+                  <button
+                    onClick={(e) => handleCopy(e, !isFlipped ? currentCard.front : currentCard.back, isFlipped ? 'back' : 'front')}
+                    className={`absolute top-3 right-3 p-2 rounded-full shadow text-lg ${theme === 'dark' ? 'bg-[#181c23] text-white hover:bg-[#232733]' : 'bg-gray-100 text-[var(--accent-primary)] hover:bg-gray-200'}`}
+                    title="Copiar conteúdo do card"
+                  >
+                    <i className="fas fa-copy"></i>
+                  </button>
+                  <span className={`text-xs mb-2 self-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Pergunta</span>
+                  <div className={`text-xl md:text-2xl font-semibold text-center min-h-[60px] flex items-center justify-center ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>
+                    {!isFlipped ? currentCard.front : currentCard.back}
+                  </div>
                 </div>
+                {/* Botões abaixo do card */}
+                <div className="flex gap-4 mt-8 w-full justify-center items-center">
+                  {/* Botão voltar card (só se não for o primeiro) */}
+                  {history.length < 5 && (
+                    <button
+                      onClick={() => setIsFlipped(false)}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-[#232733] text-white hover:bg-[#2d3240]' : 'bg-white text-[var(--accent-primary)] hover:bg-gray-100'}`}
+                    >
+                      <i className="fas fa-arrow-left"></i> Voltar
+                    </button>
+                  )}
+                  {/* Botão virar carta centralizado */}
+                  {!isFlipped && (
+                    <button
+                      onClick={() => setIsFlipped(true)}
+                      className={`px-8 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                    >
+                      VIRAR CARTA
+                    </button>
+                  )}
+                  {/* Botão continuar/próximo à direita */}
+                  {isFlipped && (
+                    <button
+                      onClick={handleNextCard}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-lg shadow transition ${theme === 'dark' ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                    >
+                      Continuar <i className="fas fa-arrow-right"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {isLoading && (
+              <div className="w-full flex flex-col items-center justify-center">
+                <div className={`rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
+                  <span className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-[var(--accent-primary)]'}`}>Carregando...</span>
+                </div>
+              </div>
             )}
           </div>
-
-          <GlassButton
-            onClick={() => handleGenerateCard()}
-            disabled={isLoading || !apiKeyAvailable}
-            className="next-card-button w-full mt-4 md:mt-0 md:w-[100px] h-[60px] flex flex-col items-center justify-center text-sm self-center md:self-auto gap-1"
-            title="Gerar novo card aleatório"
-            aria-label="Gerar novo flashcard"
-          >
-            {isLoading ? <LoadingSpinner size="sm" /> : (<><i className="fas fa-wand-magic-sparkles text-lg"></i><span className="text-xs leading-tight">Novo Card</span></>)}
-          </GlassButton>
         </div>
-
-        <div className="mt-6 pt-6 border-t border-[var(--border-color-light)]">
-            <h4 className="text-lg font-semibold mb-4 text-[var(--accent-primary)] text-center">Gerar Card por Tema:</h4>
-            <div className="flex flex-wrap justify-center gap-3">
-                {FLASHCARD_THEMES.slice(0, 5).map(theme => (
-                    <GlassButton
-                        key={theme}
-                        onClick={() => handleGenerateCard(theme)}
-                        disabled={isLoading || !apiKeyAvailable}
-                        className="text-xs px-3 py-1.5 themed-button"
-                    >
-                        {theme}
-                    </GlassButton>
-                ))}
-                 <GlassButton
-                        onClick={() => handleGenerateCard()}
-                        disabled={isLoading || !apiKeyAvailable}
-                        className="text-xs px-3 py-1.5 bg-[rgba(var(--accent-primary-rgb),0.7)] hover:bg-[rgba(var(--accent-primary-rgb),0.85)] border-[rgba(var(--accent-primary-rgb),0.7)]"
-                    >
-                        Tema Aleatório <i className="fas fa-dice ml-1"></i>
-                    </GlassButton>
-            </div>
-        </div>
-
-      </GlassCard>
+        {showCelebration && <CelebrationModal onClose={() => setSelectedDeck(null)} onRestart={handleRestartDeck} theme={theme} />}
+      </div>
     </section>
   );
 };

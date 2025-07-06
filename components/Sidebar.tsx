@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { NAV_ITEMS } from '../constants';
@@ -11,6 +10,7 @@ interface SidebarProps {
   currentUser: CurrentUserType; 
   onLogout: () => void;
   isMobileMenuOpen: boolean;
+  onToggleMenu: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -18,10 +18,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   onGeniunmTextClick, 
   currentUser, 
   onLogout,
-  isMobileMenuOpen
+  isMobileMenuOpen,
+  onToggleMenu
 }) => {
   const location = useLocation();
   const [activeSection, setActiveSection] = useState<NavigationSection>(NavigationSection.Home);
+
+  // Botão de alternância de tema
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     const hashSection = location.hash.substring(2); 
@@ -77,68 +86,82 @@ const Sidebar: React.FC<SidebarProps> = ({
 
 
   return (
-    <aside className={`${sidebarBaseClasses} ${mobileClasses} ${desktopClasses}`}>
-      {/* Sidebar Header */}
-      <div className="p-6 text-center border-b border-[var(--color-border)]">
-        <Link 
-            to={currentUser?.tipo === 'admin' ? `/${NavigationSection.AdminPanel}` : `/${NavigationSection.Home}`} 
-            onClick={() => handleNavClick(currentUser?.tipo === 'admin' ? NavigationSection.AdminPanel : NavigationSection.Home)} 
-            className="inline-block"
-            aria-label="Página inicial da plataforma"
-        >
-            <img 
-              src="/logo.png" 
-              alt="Logo Geniunm" 
-              className="h-16 w-16 mx-auto mb-2 transition-transform hover:scale-110" 
-              onError={(e) => (e.currentTarget.style.display = 'none')} 
-            />
-        </Link>
-        <h1 
-          className="text-2xl font-semibold text-[var(--color-primary)] font-display"
-          onClick={onGeniunmTextClick} 
-          style={{cursor: onGeniunmTextClick ? 'pointer' : 'default'}}
-          title={onGeniunmTextClick ? "Clique para uma surpresa..." : "Geniunm Training Platform"}
-        >
-          Geniunm
-        </h1>
-        <p className="text-xs text-[var(--color-text-light)]">Treinamento de Consultores</p>
-      </div>
-      
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar" aria-label="Menu principal">
-        {visibleNavItems.map((item) => (
-          <NavLinkItem key={item.section} item={item} />
-        ))}
-      </nav>
-
-      {/* User Info & Logout */}
-      {currentUser && (
-        <div className="p-4 mt-auto border-t border-[var(--color-border)]">
-          <div className="flex items-center mb-3">
-             <div 
-                className="w-10 h-10 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center text-lg font-medium mr-3 overflow-hidden"
-                title={currentUser.nome}
-              >
-              {currentUser.nome ? currentUser.nome.charAt(0).toUpperCase() : '?'}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text)] leading-tight" title={currentUser.nome}>{getUserDisplayName()}</p>
-              <p className="text-xs text-[var(--color-text-light)] leading-tight capitalize">
-                {currentUser.tipo}
-              </p>
-            </div>
-          </div>
-          <GlassButton 
-            onClick={onLogout} 
-            className="w-full !text-sm !py-2 !bg-[rgba(var(--color-primary-rgb),0.15)] !text-[var(--color-primary)] hover:!bg-[rgba(var(--color-primary-rgb),0.25)] !border-[rgba(var(--color-primary-rgb),0.2)]"
-            title="Sair da plataforma"
-            aria-label="Sair da plataforma"
+    <>
+      {/* Botão hambúrguer fixo */}
+      <button
+        className={`fixed top-4 left-4 z-40 p-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-md transition-transform ${isMobileMenuOpen ? 'scale-90' : 'scale-100'}`}
+        onClick={onToggleMenu}
+        aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+      >
+        <i className={`fas ${isMobileMenuOpen ? 'fa-times' : 'fa-bars'} text-xl text-[var(--color-primary)]`}></i>
+      </button>
+      <aside className={`${sidebarBaseClasses} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-30 w-64 transition-transform duration-300 ease-in-out bg-[var(--color-surface)] shadow-xl flex flex-col h-screen border-r border-[var(--color-border)]`}> 
+        {/* Sidebar Header */}
+        <div className="p-6 text-center border-b border-[var(--color-border)]">
+          <Link 
+              to={currentUser?.tipo === 'admin' ? `/${NavigationSection.AdminPanel}` : `/${NavigationSection.Home}`} 
+              onClick={() => handleNavClick(currentUser?.tipo === 'admin' ? NavigationSection.AdminPanel : NavigationSection.Home)} 
+              className="inline-block"
+              aria-label="Página inicial da plataforma"
           >
-            <i className="fas fa-sign-out-alt mr-2"></i>Sair
-          </GlassButton>
+              <img 
+                src="/logo.png" 
+                alt="Logo Geniunm" 
+                className="h-16 w-16 mx-auto mb-2 transition-transform hover:scale-110" 
+                onError={(e) => (e.currentTarget.style.display = 'none')} 
+              />
+          </Link>
+          <h1 
+            className="text-2xl font-semibold text-[var(--color-primary)] font-display"
+            onClick={onGeniunmTextClick} 
+            style={{cursor: onGeniunmTextClick ? 'pointer' : 'default'}}
+            title={onGeniunmTextClick ? "Clique para uma surpresa..." : "Geniunm Training Platform"}
+          >
+            Geniunm
+          </h1>
+          <p className="text-xs text-[var(--color-text-light)]">Treinamento de Consultores</p>
         </div>
-      )}
-    </aside>
+        {/* Alternância de tema */}
+        <div className="flex justify-center items-center py-4">
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Alternar tema claro/escuro">
+            <i className={`fas fa-${theme === 'dark' ? 'sun' : 'moon'} text-2xl`}></i>
+          </button>
+        </div>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar" aria-label="Menu principal">
+          {visibleNavItems.map((item) => (
+            <NavLinkItem key={item.section} item={item} />
+          ))}
+        </nav>
+        {/* User Info & Logout */}
+        {currentUser && (
+          <div className="p-4 mt-auto border-t border-[var(--color-border)]">
+            <div className="flex items-center mb-3">
+               <div 
+                  className="w-10 h-10 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center text-lg font-medium mr-3 overflow-hidden"
+                  title={currentUser.nome}
+                >
+                {currentUser.nome ? currentUser.nome.charAt(0).toUpperCase() : '?'}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--color-text)] leading-tight" title={currentUser.nome}>{getUserDisplayName()}</p>
+                <p className="text-xs text-[var(--color-text-light)] leading-tight capitalize">
+                  {currentUser.tipo}
+                </p>
+              </div>
+            </div>
+            <GlassButton 
+              onClick={onLogout} 
+              className="w-full !text-sm !py-2 !bg-[rgba(var(--color-primary-rgb),0.15)] !text-[var(--color-primary)] hover:!bg-[rgba(var(--color-primary-rgb),0.25)] !border-[rgba(var(--color-primary-rgb),0.2)]"
+              title="Sair da plataforma"
+              aria-label="Sair da plataforma"
+            >
+              <i className="fas fa-sign-out-alt mr-2"></i>Sair
+            </GlassButton>
+          </div>
+        )}
+      </aside>
+    </>
   );
 };
 

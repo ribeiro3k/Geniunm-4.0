@@ -6,7 +6,6 @@ import HomeSection from './components/HomeSection';
 import FlashcardSection from './components/FlashcardSection/FlashcardSection';
 import QuizSection from './components/QuizSection/QuizSection';
 import SimulatorSection from './components/SimulatorSection/SimulatorSection';
-import ObjectionTrainerSection from './components/ObjectionTrainerSection/ObjectionTrainerSection'; 
 import AdminDashboard from './components/AdminSection/AdminDashboard'; 
 import CollaboratorDashboard from './components/AdminSection/CollaboratorDashboard'; 
 import UserManagementPanel from './components/AdminSection/UserManagementPanel';
@@ -224,7 +223,7 @@ const AppContent: React.FC = () => {
 
   }, [location, currentUser, navigate]);
   
-  const appContainerClass = `min-h-screen flex text-[var(--color-text)] ${currentUser ? 'flex-row' : 'flex-col'}`;
+  const appContainerClass = `min-h-screen flex flex-col text-[var(--color-text)]`;
   const mainContentAreaClass = `flex-1 flex flex-col overflow-y-auto custom-scrollbar ${currentUser && isSimulatorPage && isSmallScreen ? 'p-0' : 'p-4 md:p-6 lg:p-8'} ${isSmallScreen ? 'main-content-mobile' : ''}`;
   const contentWrapperClass = currentUser 
     ? (isSimulatorPage ? 'flex-grow w-full' : 'flex-grow container mx-auto w-full') 
@@ -253,7 +252,7 @@ const AppContent: React.FC = () => {
           {isMobileMenuOpen && isSmallScreen && (
             <div className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm md:hidden" onClick={toggleMobileMenu} aria-label="Fechar menu"></div>
           )}
-          <Sidebar onNavigate={handleNavigate} onGeniunmTextClick={handleGeniunmTextClick} currentUser={currentUser} onLogout={handleLogout} isMobileMenuOpen={isMobileMenuOpen} />
+          <Sidebar onNavigate={handleNavigate} onGeniunmTextClick={handleGeniunmTextClick} currentUser={currentUser} onLogout={handleLogout} isMobileMenuOpen={isMobileMenuOpen} onToggleMenu={toggleMobileMenu} />
         </>
       )}
       <main className={mainContentAreaClass}>
@@ -268,7 +267,6 @@ const AppContent: React.FC = () => {
                     : <HomeSection currentUser={null} onLogin={handleLogin} authError={authError} isLoadingAuth={isLoadingAuth} setAuthError={setAuthError} />
                 } 
             />
-            
             <Route element={<ProtectedRoute user={currentUser} redirectPath={`/${NavigationSection.Home}`} />}>
                 <Route path={`/${NavigationSection.Flashcards}`} element={ <FlashcardSection />} />
                 <Route path={`/${NavigationSection.Quiz}`} element={<QuizSection currentUser={currentUser} />} />
@@ -281,8 +279,6 @@ const AppContent: React.FC = () => {
                         onBossBattleTriggerConsumed={resetBossBattleTrigger}
                     />} 
                 />
-                <Route path={`/${NavigationSection.ObjectionTrainer}`} element={ <ObjectionTrainerSection />} />
-            
                 <Route 
                     path={`/${NavigationSection.AdminPanel}`} 
                     element={ currentUser?.tipo === 'admin' ? <AdminDashboard currentUser={currentUser} /> : <Navigate to={`/${NavigationSection.Home}`} replace />}
@@ -304,18 +300,15 @@ const AppContent: React.FC = () => {
                     element={ currentUser?.tipo === 'admin' ? <PersonaCustomizationPanel /> : <Navigate to={`/${NavigationSection.Home}`} replace /> }
                 />
             </Route>
-            
             <Route path="/" element={<Navigate to={`/${NavigationSection.Home}`} replace />} />
-            <Route path="*" element={<Navigate to={`/${NavigationSection.Home}`} replace />} /> 
+            <Route path="*" element={<Navigate to={`/${NavigationSection.Home}`} replace />} />
             </Routes>
         </div>
-        {currentUser && !(currentUser.tipo === 'admin') && <Footer onGeniunmTextClick={handleGeniunmTextClick} />}
-        {currentUser && currentUser.tipo === 'admin' && (location.pathname.startsWith(`/${NavigationSection.AdminPanel}`) || location.pathname.startsWith(`/${NavigationSection.UserManagement}`) || location.pathname.startsWith(`/${NavigationSection.Reports}`) || location.pathname.startsWith(`/${NavigationSection.PersonaCustomization}`) || location.hash.startsWith(`#/${NavigationSection.AdminPanel}`) || location.hash.startsWith(`#/${NavigationSection.UserManagement}`) || location.hash.startsWith(`#/${NavigationSection.Reports}`) || location.hash.startsWith(`#/${NavigationSection.PersonaCustomization}`)) && <Footer />}
       </main>
+      <Footer onGeniunmTextClick={handleGeniunmTextClick} />
     </div>
   );
-};
-
+}
 
 const App: React.FC = () => {
   return (

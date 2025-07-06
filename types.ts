@@ -1,4 +1,3 @@
-
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // AppUser: Represents the authenticated user within the application context
@@ -101,7 +100,6 @@ export enum NavigationSection {
   Flashcards = 'flashcards',
   Quiz = 'quiz',
   Simulador = 'simulador',
-  ObjectionTrainer = 'objection-trainer',
   AdminPanel = 'admin-panel', 
   UserManagement = 'user-management',
   Reports = 'reports', 
