@@ -104,6 +104,7 @@ export enum NavigationSection {
   UserManagement = 'user-management',
   Reports = 'reports', 
   PersonaCustomization = 'persona-customization', 
+  Scripts = 'scripts',
 }
 
 export interface NavItem {

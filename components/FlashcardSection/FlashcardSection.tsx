@@ -45,7 +45,6 @@ const FlashcardSection: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userProgress, setUserProgress] = useState<UserFlashcardProgress[]>([]);
   const [userId, setUserId] = useState<string>(''); // TODO: Integrar com autenticação real
-  const [favoriteCards, setFavoriteCards] = useState<SupabaseFlashcard[]>([]);
 
   // Simular progresso por deck (futuro: integrar com backend/estado real)
   const getDeckProgress = (theme: string) => 0; // TODO: integrar progresso real
@@ -199,15 +198,6 @@ const FlashcardSection: React.FC = () => {
     }
   }, [selectedDeck, userId]);
 
-  // Buscar favoritos ao carregar tela de seleção
-  useEffect(() => {
-    if (userId && !selectedDeck) {
-      fetchFavoriteFlashcards(userId)
-        .then(setFavoriteCards)
-        .catch(() => setFavoriteCards([]));
-    }
-  }, [userId, selectedDeck]);
-
   // Salvar progresso ao avançar para o próximo card
   const handleNextCard = async () => {
     if (deckCards.length > 0 && userId) {
@@ -239,40 +229,6 @@ const FlashcardSection: React.FC = () => {
     handleGenerateCard(selectedDeck!);
   };
 
-  // Função para favoritar/desfavoritar
-  const handleToggleFavorite = async () => {
-    if (!userId || deckCards.length === 0) return;
-    const currentCardId = deckCards[currentIndex].id;
-    const progress = userProgress.find(p => p.flashcard_id === currentCardId);
-    const isFavorite = progress?.is_favorite ?? false;
-    try {
-      await setFlashcardFavorite(userId, currentCardId, !isFavorite);
-      setUserProgress(prev => prev.map(p =>
-        p.flashcard_id === currentCardId ? { ...p, is_favorite: !isFavorite } : p
-      ));
-    } catch {}
-  };
-
-  // Ao selecionar o deck Favoritos, mostrar apenas os favoritos:
-  useEffect(() => {
-    if (selectedDeck === 'Favoritos' && userId) {
-      setIsLoading(true);
-      fetchFavoriteFlashcards(userId)
-        .then(cards => {
-          setDeckCards(cards);
-          setCurrentIndex(0);
-          setIsFlipped(false);
-          setIsLoading(false);
-        })
-        .catch(() => {
-          setDeckCards([]);
-          setCurrentIndex(0);
-          setIsFlipped(false);
-          setIsLoading(false);
-        });
-    }
-  }, [selectedDeck, userId]);
-
   // Se nenhum deck foi selecionado, mostrar seleção de decks
   if (!selectedDeck) {
     return (
@@ -293,16 +249,6 @@ const FlashcardSection: React.FC = () => {
                 <span className={`text-xs mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-[var(--text-secondary)]'}`}>0% concluído</span>
               </button>
             ))}
-            {favoriteCards.length > 0 && (
-              <button
-                className={`flex flex-col items-center justify-center p-8 rounded-2xl shadow-xl hover:shadow-2xl transition border min-h-[180px] focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white border-yellow-300 text-yellow-600`}
-                onClick={() => setSelectedDeck('Favoritos')}
-              >
-                <div className="text-5xl mb-3">⭐</div>
-                <div className="font-bold text-lg mb-2 text-center">Favoritos</div>
-                <span className="text-xs mt-2">{favoriteCards.length} cards</span>
-              </button>
-            )}
           </div>
         </div>
       </section>
@@ -311,7 +257,6 @@ const FlashcardSection: React.FC = () => {
 
   // TELA DE ESTUDO - MODO FOCO ESCURO/CLARO
   const deckList = [...FLASHCARD_THEMES];
-  if (favoriteCards.length > 0) deckList.push('Favoritos');
   const currentDeckIndex = deckList.findIndex(d => d === selectedDeck);
   const nextDeck = deckList[(currentDeckIndex + 1) % deckList.length];
 
@@ -339,15 +284,6 @@ const FlashcardSection: React.FC = () => {
             {!isLoading && deckCards.length > 0 && (
               <div className="w-full flex flex-col items-center justify-center">
                 <div className={`relative rounded-2xl p-8 md:p-12 w-full max-w-xl min-h-[220px] flex flex-col items-center justify-center transition-all duration-300 border ${theme === 'dark' ? 'bg-[#232733] border-[#2d3240] shadow-2xl' : 'bg-white border-gray-200 shadow-xl'}`}>
-                  {/* Botão favorito canto superior esquerdo */}
-                  <button
-                    onClick={handleToggleFavorite}
-                    className={`absolute top-3 left-3 p-2 rounded-full shadow text-lg ${theme === 'dark' ? 'bg-[#181c23] text-yellow-400 hover:bg-[#232733]' : 'bg-gray-100 text-yellow-500 hover:bg-gray-200'}`}
-                    title={userProgress.find(p => p.flashcard_id === deckCards[currentIndex].id)?.is_favorite ? 'Remover dos favoritos' : 'Favoritar'}
-                    style={{ zIndex: 2 }}
-                  >
-                    {userProgress.find(p => p.flashcard_id === deckCards[currentIndex].id)?.is_favorite ? '⭐' : '☆'}
-                  </button>
                   {/* Botão copiar canto superior direito */}
                   <button
                     onClick={(e) => copyToClipboard(!isFlipped ? deckCards[currentIndex].front : deckCards[currentIndex].back, isFlipped ? 'back' : 'front')}

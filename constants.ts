@@ -22,6 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
     section: NavigationSection.Simulador,
     icon: "fa-comments",
   },
+  { href: "#/scripts", label: "Scripts", section: NavigationSection.Scripts, icon: "fa-file-alt" },
   { href: "#/admin-panel", label: "Painel Admin", section: NavigationSection.AdminPanel, adminOnly: true, icon: "fa-tachometer-alt" },
   { href: "#/user-management", label: "Gerenciar Usuários", section: NavigationSection.UserManagement, adminOnly: true, icon: "fa-users-cog" },
   { href: "#/reports", label: "Relatórios", section: NavigationSection.Reports, adminOnly: true, icon: "fa-chart-pie" },

@@ -16,6 +16,7 @@ import { NavigationSection, AppUser, CurrentUserType } from './types';
 import { NAV_ITEMS, LOCAL_STORAGE_USER_LAST_LOGIN_PREFIX, ADMIN_FIXED_PASSWORD, LOCAL_STORAGE_CURRENT_USER_KEY, TABLE_USUARIOS, SUPABASE_ERROR_MESSAGE } from './constants'; 
 import { supabase } from './lib/supabaseClient'; 
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import ScriptLibrarySection from './components/ScriptLibrary/ScriptLibrarySection';
 
 
 const ScrollToSection: React.FC = () => {
@@ -300,6 +301,7 @@ const AppContent: React.FC = () => {
                     element={ currentUser?.tipo === 'admin' ? <PersonaCustomizationPanel /> : <Navigate to={`/${NavigationSection.Home}`} replace /> }
                 />
             </Route>
+            <Route path="/scripts" element={<ScriptLibrarySection />} />
             <Route path="/" element={<Navigate to={`/${NavigationSection.Home}`} replace />} />
             <Route path="*" element={<Navigate to={`/${NavigationSection.Home}`} replace />} />
             </Routes>
