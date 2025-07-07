@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+// @ts-ignore: Não há declaração de tipos para 'sortablejs'
 import Sortable from 'sortablejs';
+import { useTheme } from '../ui/useTheme';
 
 // Tipos
 interface KanbanCard {
@@ -14,6 +16,11 @@ interface KanbanCard {
 interface KanbanColumn {
   title: string;
   cards: KanbanCard[];
+}
+
+// Adicionar prop opcional para o usuário logado
+interface ScriptLibrarySectionProps {
+  currentUser?: { nome: string } | null;
 }
 
 const STORAGE_KEY = 'proKanbanDataV4';
@@ -50,7 +57,7 @@ const initialKanban: Record<string, KanbanColumn> = {
   },
 };
 
-const ScriptLibrarySection: React.FC = () => {
+const ScriptLibrarySection: React.FC<ScriptLibrarySectionProps> = ({ currentUser }) => {
   // Estado principal do Kanban
   const [kanban, setKanban] = useState<Record<string, KanbanColumn>>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -71,6 +78,7 @@ const ScriptLibrarySection: React.FC = () => {
     const saved = localStorage.getItem('isCompactView');
     return saved === 'true';
   });
+  const { theme } = useTheme();
 
   // Persistência
   useEffect(() => {
@@ -86,22 +94,52 @@ const ScriptLibrarySection: React.FC = () => {
         group: 'kanban',
         animation: 150,
         ghostClass: 'sortable-ghost',
+        draggable: '.kanban-card',
+        filter: '.add-card-btn',
+        onMove: function (evt: any) {
+          return !evt.related.classList.contains('add-card-btn');
+        },
         onEnd: (evt: any) => {
-          if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
-          setKanban(prev => {
-            const copy = { ...prev };
-            // Remove do array de origem
-            const fromColId = evt.from.dataset.colId;
-            const toColId = evt.to.dataset.colId;
-            if (!fromColId || !toColId) return prev;
-            const fromCol = { ...copy[fromColId] };
-            const toCol = fromColId === toColId ? fromCol : { ...copy[toColId] };
-            const [removed] = fromCol.cards.splice(evt.oldIndex, 1);
-            toCol.cards.splice(evt.newIndex, 0, removed);
-            copy[fromColId] = fromCol;
-            copy[toColId] = toCol;
-            return copy;
-          });
+          try {
+            if (evt.from === evt.to && evt.oldDraggableIndex === evt.newDraggableIndex) return;
+            setKanban(prev => {
+              const copy = { ...prev };
+              const fromColId = evt.from.dataset.colId;
+              const toColId = evt.to.dataset.colId;
+              if (!fromColId || !toColId) {
+                console.error('Coluna de origem ou destino não encontrada:', { fromColId, toColId });
+                return prev;
+              }
+              const fromCol = { ...copy[fromColId] };
+              const toCol = fromColId === toColId ? fromCol : { ...copy[toColId] };
+              // Validação de índices
+              if (
+                evt.oldDraggableIndex < 0 ||
+                evt.oldDraggableIndex >= fromCol.cards.length ||
+                evt.newDraggableIndex < 0 ||
+                evt.newDraggableIndex > toCol.cards.length
+              ) {
+                console.error('Índices inválidos no drag and drop:', {
+                  oldDraggableIndex: evt.oldDraggableIndex,
+                  newDraggableIndex: evt.newDraggableIndex,
+                  fromCol,
+                  toCol
+                });
+                return prev;
+              }
+              const [removed] = fromCol.cards.splice(evt.oldDraggableIndex, 1);
+              if (!removed) {
+                console.error('Nenhum card removido ao arrastar:', { evt, fromCol });
+                return prev;
+              }
+              toCol.cards.splice(evt.newDraggableIndex, 0, removed);
+              copy[fromColId] = fromCol;
+              copy[toColId] = toCol;
+              return copy;
+            });
+          } catch (error) {
+            console.error('Erro no drag and drop:', error, evt);
+          }
         },
       });
     });
@@ -152,47 +190,64 @@ const ScriptLibrarySection: React.FC = () => {
     <section className="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
       {/* Cabeçalho e controles */}
       <div className="p-4 md:p-6 max-w-full mx-auto w-full flex-shrink-0">
-        <header className="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text)]">📚 Biblioteca de Scripts</h1>
-          <div className="flex items-center gap-4 mt-4 sm:mt-0">
+        <header className="flex flex-col gap-4 md:gap-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Logo + Título */}
+            <div className="flex items-center gap-3 min-w-0">
+              <img src="/logo.png" alt="Logo Geniunm" className="h-8 w-8 md:h-10 md:w-10" style={{minWidth:32}} onError={e => (e.currentTarget.style.display = 'none')} />
+              <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text)] truncate">Biblioteca de Scripts</h1>
+            </div>
+            {/* Botão de alternância de visualização */}
             <button
               title={isCompactView ? 'Mudar para visão expandida' : 'Mudar para visão compacta'}
-              className="p-2 rounded-md bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)]"
+              className="p-2 rounded-md bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] ml-auto md:ml-0"
               onClick={toggleViewMode}
+              aria-label={isCompactView ? 'Mudar para visão expandida' : 'Mudar para visão compacta'}
             >
               {isCompactView ? '📄' : '📜'}
             </button>
           </div>
-          {/* Campo de busca */}
-          <input
-            type="text"
-            className="rounded-lg px-4 py-2 w-full md:w-72 bg-[var(--color-input-bg)] text-[var(--color-text)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] mt-4 sm:mt-0"
-            placeholder="Pesquisar por título ou tag..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {/* Filtros de tags */}
-          <div className="flex items-center gap-2 flex-wrap mt-2">
-            <span className="text-sm font-bold mr-2 text-[var(--color-text-light)]">Filtros:</span>
-            <button
-              className={`text-xs font-semibold px-2 py-1 rounded-full bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] transition-all flex items-center gap-1 ${showOnlyFavorites ? 'ring-2 ring-yellow-400 text-yellow-400' : ''}`}
-              onClick={() => setShowOnlyFavorites(fav => !fav)}
-            >
-              <span>{showOnlyFavorites ? '⭐' : '☆'}</span> Favoritos
-            </button>
-            {allTags.map(tag => (
+          {/* Barra de busca */}
+          <div className="flex flex-col gap-2 w-full">
+            <div className="relative w-full">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-light)] pointer-events-none">
+                <i className="fas fa-search"></i>
+              </span>
+              <input
+                type="text"
+                className="rounded-lg pl-10 pr-4 py-2 w-full bg-[var(--color-input-bg)] text-[var(--color-text)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                placeholder="Pesquisar por título ou tag..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                aria-label="Pesquisar scripts"
+                autoFocus
+              />
+            </div>
+            {/* Filtros */}
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <span className="text-sm font-bold text-[var(--color-text-light)] mr-1">Filtros:</span>
               <button
-                key={tag}
-                className={`text-xs font-semibold px-2 py-1 rounded-full bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] transition-all ${activeFilters.includes(tag) ? 'ring-2 ring-[var(--color-primary)]' : ''}`}
-                onClick={() => {
-                  setActiveFilters(f =>
-                    f.includes(tag) ? f.filter(t => t !== tag) : [...f, tag]
-                  );
-                }}
+                className={`text-xs font-semibold px-3 py-1 rounded-full bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] transition-all flex items-center gap-1 ${showOnlyFavorites ? 'ring-2 ring-yellow-400 text-yellow-400' : ''}`}
+                onClick={() => setShowOnlyFavorites(fav => !fav)}
+                aria-pressed={showOnlyFavorites}
               >
-                {tag}
+                <span>{showOnlyFavorites ? '⭐' : '☆'}</span> Favoritos
               </button>
-            ))}
+              {allTags.map(tag => (
+                <button
+                  key={tag}
+                  className={`text-xs font-semibold px-3 py-1 rounded-full bg-[var(--color-surface)] hover:bg-[var(--color-border)] border border-[var(--color-border)] transition-all ${activeFilters.includes(tag) ? 'ring-2 ring-[var(--color-primary)]' : ''}`}
+                  onClick={() => {
+                    setActiveFilters(f =>
+                      f.includes(tag) ? f.filter(t => t !== tag) : [...f, tag]
+                    );
+                  }}
+                  aria-pressed={activeFilters.includes(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
       </div>
@@ -406,29 +461,38 @@ const ScriptLibrarySection: React.FC = () => {
       </main>
       {/* Painel lateral de detalhes */}
       {sidePanelCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-40 flex justify-end">
-          <div className="side-panel open fixed top-0 right-0 h-full w-full max-w-lg bg-slate-800 shadow-2xl p-6 flex flex-col z-50">
-            <header className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
-              <h2 className="text-2xl font-bold text-white">{sidePanelCard.title}</h2>
-              <button
-                className="p-2 rounded-full hover:bg-slate-700"
-                onClick={() => setSidePanelCard(null)}
-              >
-                &times;
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
+          <div className={`relative w-full max-w-lg mx-auto rounded-lg p-6 flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] shadow-2xl transition-colors duration-300
+            ${theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}
+          >
+            <button
+              className={`absolute top-4 right-4 p-2 rounded-full text-2xl z-10 transition-colors duration-300
+                ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'}`}
+              onClick={() => setSidePanelCard(null)}
+              aria-label="Fechar"
+            >
+              &times;
+            </button>
+            <header className="mb-6 pb-4 border-b" style={{ borderColor: theme === 'dark' ? '#334155' : '#e5e7eb' }}>
+              <h2 className="text-2xl font-bold text-center">{sidePanelCard.title}</h2>
             </header>
             <div className="flex-grow overflow-y-auto">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase mb-2">Script Completo</h3>
-              <p className="text-slate-300 whitespace-pre-wrap bg-slate-900 p-4 rounded-md">{sidePanelCard.script}</p>
+              <h3 className={`text-sm font-semibold uppercase mb-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Script Completo</h3>
+              <textarea
+                className={`w-full min-h-[120px] p-4 rounded-md resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300
+                  ${theme === 'dark' ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-900'}`}
+                value={sidePanelCard.script}
+                onChange={e => setSidePanelCard((prev: any) => prev ? { ...prev, script: e.target.value } : prev)}
+              />
               <div className="flex items-center gap-2 flex-wrap mt-4">
                 {sidePanelCard.tags.map((tag: string) => (
-                  <span key={tag} className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-700 text-slate-300">{tag}</span>
+                  <span key={tag} className={`text-xs font-semibold px-2 py-1 rounded-full ${theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{tag}</span>
                 ))}
               </div>
               <div className="mt-4 flex items-center gap-4">
                 <span className="text-lg">{sidePanelCard.type === 'call' ? '📞' : sidePanelCard.type === 'objection' ? '⚠️' : sidePanelCard.type === 'closing' ? '✅' : '📝'}</span>
                 <button
-                  className={`transition-transform duration-200 ${sidePanelCard.favorite ? 'scale-110 text-yellow-400' : 'text-slate-500 hover:text-yellow-400'}`}
+                  className={`transition-transform duration-200 ${sidePanelCard.favorite ? 'scale-110 text-yellow-400' : theme === 'dark' ? 'text-slate-500 hover:text-yellow-400' : 'text-slate-400 hover:text-yellow-400'}`}
                   title="Favoritar"
                   onClick={() => {
                     setKanban(prev => {
@@ -448,15 +512,35 @@ const ScriptLibrarySection: React.FC = () => {
                 </button>
               </div>
             </div>
-            <footer className="flex-shrink-0 pt-4">
+            <footer className="flex-shrink-0 pt-4 flex flex-col gap-2">
               <button
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg"
                 onClick={() => {
-                  navigator.clipboard.writeText(sidePanelCard.script);
+                  navigator.clipboard.writeText(
+                    (sidePanelCard.script || '').replace(/\[Seu Nome\]/gi, currentUser?.nome || 'Consultor')
+                  );
                   showToast('Script copiado!');
                 }}
               >
                 Copiar Script
+              </button>
+              <button
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg"
+                onClick={() => {
+                  // Salvar edição do script no kanban
+                  setKanban(prev => {
+                    const copy = { ...prev };
+                    for (const colId in copy) {
+                      const colCopy = { ...copy[colId] };
+                      colCopy.cards = colCopy.cards.map(c => c.id === sidePanelCard.id ? { ...c, script: sidePanelCard.script } : c);
+                      copy[colId] = colCopy;
+                    }
+                    return copy;
+                  });
+                  showToast('Script atualizado!');
+                }}
+              >
+                Salvar Alterações
               </button>
             </footer>
           </div>

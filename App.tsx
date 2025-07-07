@@ -18,6 +18,7 @@ import { supabase } from './lib/supabaseClient';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import ScriptLibrarySection from './components/ScriptLibrary/ScriptLibrarySection';
 
+const LAST_ROUTE_KEY = 'geniunm_last_route';
 
 const ScrollToSection: React.FC = () => {
   const location = useLocation();
@@ -230,6 +231,24 @@ const AppContent: React.FC = () => {
     ? (isSimulatorPage ? 'flex-grow w-full' : 'flex-grow container mx-auto w-full') 
     : 'flex-grow flex flex-col items-center justify-center w-full';
 
+  // Persistir a última rota acessada
+  useEffect(() => {
+    const path = location.pathname + location.search + location.hash;
+    if (path !== '/') {
+      localStorage.setItem(LAST_ROUTE_KEY, path);
+    }
+  }, [location]);
+
+  // Redirecionar para a última rota salva ao iniciar
+  useEffect(() => {
+    const lastRoute = localStorage.getItem(LAST_ROUTE_KEY);
+    if (lastRoute && location.pathname === '/') {
+      navigate(lastRoute, { replace: true });
+    }
+    // Só executa no primeiro carregamento
+    // eslint-disable-next-line
+  }, []);
+
   if (isLoadingAuth) { 
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
@@ -301,7 +320,7 @@ const AppContent: React.FC = () => {
                     element={ currentUser?.tipo === 'admin' ? <PersonaCustomizationPanel /> : <Navigate to={`/${NavigationSection.Home}`} replace /> }
                 />
             </Route>
-            <Route path="/scripts" element={<ScriptLibrarySection />} />
+            <Route path="/scripts" element={<ScriptLibrarySection currentUser={currentUser} />} />
             <Route path="/" element={<Navigate to={`/${NavigationSection.Home}`} replace />} />
             <Route path="*" element={<Navigate to={`/${NavigationSection.Home}`} replace />} />
             </Routes>
