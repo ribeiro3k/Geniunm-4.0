@@ -10,7 +10,7 @@ import GlassButton from '../ui/GlassButton';
 import GlassCard from '../ui/GlassCard';
 import AnimatedLoadingText from '../ui/AnimatedLoadingText';
 import ProgressBar from '../ui/ProgressBar';
-import { useTheme } from '../ui/useTheme.ts';
+import { useTheme } from '../ui/useTheme.tsx';
 import { fetchFlashcardsByTheme, upsertUserFlashcardProgress, fetchUserFlashcardProgress, setFlashcardFavorite, fetchFavoriteFlashcards } from '../../lib/supabaseClient';
 import { SupabaseFlashcard, UserFlashcardProgress } from '../../types';
 

@@ -68,9 +68,6 @@ const AddScriptModal: React.FC<AddScriptModalProps> = ({ isOpen, onClose, onAddS
               <div>
                 <h2 className="text-xl md:text-2xl font-display text-[var(--color-primary)]">Adicionar Novo Script</h2>
               </div>
-              <button onClick={onClose} className="text-[var(--color-text-light)] hover:text-white transition-colors">
-                <i className="fas fa-times fa-lg"></i>
-              </button>
             </header>
 
             <form onSubmit={handleSubmit} className="p-6 flex-grow overflow-y-auto custom-scrollbar space-y-4">

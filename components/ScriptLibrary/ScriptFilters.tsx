@@ -58,7 +58,7 @@ const ScriptFilters: React.FC<ScriptFiltersProps> = ({
       </div>
       
       {/* Quick Filter Buttons */}
-      <div className="flex items-center gap-2 mt-3">
+      <div className="flex items-center gap-2 mt-4">
         <span className="text-sm font-medium text-[var(--color-text-light)] mr-2">Filtros rápidos:</span>
         {filterButtons.map(({ key, label, icon }) => (
           <button

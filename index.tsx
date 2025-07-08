@@ -1,7 +1,7 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx'; // Changed from './App'
+import './styles/custom-scrollbar.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

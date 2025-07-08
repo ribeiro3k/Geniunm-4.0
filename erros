@@ -1,0 +1,407 @@
+(índice):64  cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anônimo) @ (índice):64
+(anônimo) @ (índice):64
+client:789 [vite] connecting...
+client:912 [vite] connected.
+supabaseClient.ts:24  Supabase URL ou Anon Key não configurados. Verifique as variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY.
+overrideMethod @ hook.js:608
+(anônimo) @ supabaseClient.ts:24
+geminiService.ts:46  API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY.
+overrideMethod @ hook.js:608
+(anônimo) @ geminiService.ts:46
+App.tsx:29  ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+overrideMethod @ hook.js:608
+warnOnce @ deprecations.ts:9
+logDeprecation @ deprecations.ts:14
+logV6DeprecationWarnings @ deprecations.ts:26
+(anônimo) @ index.tsx:869
+react-stack-bottom-frame @ react-dom-client.development.js:23949
+runWithFiberInDEV @ react-dom-client.development.js:1519
+commitHookEffectListMount @ react-dom-client.development.js:11905
+commitHookPassiveMountEffects @ react-dom-client.development.js:12026
+commitPassiveMountOnFiber @ react-dom-client.development.js:13841
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13853
+flushPassiveEffects @ react-dom-client.development.js:15737
+(anônimo) @ react-dom-client.development.js:15379
+performWorkUntilDeadline @ scheduler.development.js:45
+<HashRouter>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:29
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anônimo) @ index.tsx:14
+App.tsx:29  ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+overrideMethod @ hook.js:608
+warnOnce @ deprecations.ts:9
+logDeprecation @ deprecations.ts:14
+logV6DeprecationWarnings @ deprecations.ts:37
+(anônimo) @ index.tsx:869
+react-stack-bottom-frame @ react-dom-client.development.js:23949
+runWithFiberInDEV @ react-dom-client.development.js:1519
+commitHookEffectListMount @ react-dom-client.development.js:11905
+commitHookPassiveMountEffects @ react-dom-client.development.js:12026
+commitPassiveMountOnFiber @ react-dom-client.development.js:13841
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13853
+flushPassiveEffects @ react-dom-client.development.js:15737
+(anônimo) @ react-dom-client.development.js:15379
+performWorkUntilDeadline @ scheduler.development.js:45
+<HashRouter>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:29
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anônimo) @ index.tsx:14
+FlashcardSection.tsx:97  Error in handleGenerateCard: Error: API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY.
+    at generateFlashcardFromGemini (geminiService.ts:50:30)
+    at FlashcardSection.tsx:72:29
+    at FlashcardSection.tsx:120:5
+    at react-stack-bottom-frame (react-dom-client.development.js:23949:20)
+    at runWithFiberInDEV (react-dom-client.development.js:1519:30)
+    at commitHookEffectListMount (react-dom-client.development.js:11905:29)
+    at commitHookPassiveMountEffects (react-dom-client.development.js:12026:11)
+    at commitPassiveMountOnFiber (react-dom-client.development.js:13841:13)
+    at recursivelyTraversePassiveMountEffects (react-dom-client.development.js:13815:11)
+    at commitPassiveMountOnFiber (react-dom-client.development.js:13957:11)
+overrideMethod @ hook.js:608
+(anônimo) @ FlashcardSection.tsx:97
+await in (anônimo)
+(anônimo) @ FlashcardSection.tsx:120
+react-stack-bottom-frame @ react-dom-client.development.js:23949
+runWithFiberInDEV @ react-dom-client.development.js:1519
+commitHookEffectListMount @ react-dom-client.development.js:11905
+commitHookPassiveMountEffects @ react-dom-client.development.js:12026
+commitPassiveMountOnFiber @ react-dom-client.development.js:13841
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13834
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13957
+recursivelyTraversePassiveMountEffects @ react-dom-client.development.js:13815
+commitPassiveMountOnFiber @ react-dom-client.development.js:13853
+flushPassiveEffects @ react-dom-client.development.js:15737
+flushPendingEffects @ react-dom-client.development.js:15702
+flushSpawnedWork @ react-dom-client.development.js:15668
+commitRoot @ react-dom-client.development.js:15403
+commitRootWhenReady @ react-dom-client.development.js:14652
+performWorkOnRoot @ react-dom-client.development.js:14575
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<FlashcardSection>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppContent @ App.tsx:223
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<AppContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:31
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anônimo) @ index.tsx:14
+FlashcardSection.tsx:97  Error in handleGenerateCard: Error: API Key do Gemini não configurada. Por favor, configure a variável de ambiente API_KEY.
+    at generateFlashcardFromGemini (geminiService.ts:50:30)
+    at FlashcardSection.tsx:72:29
+    at FlashcardSection.tsx:120:5
+    at react-stack-bottom-frame (react-dom-client.development.js:23949:20)
+    at runWithFiberInDEV (react-dom-client.development.js:1519:30)
+    at commitHookEffectListMount (react-dom-client.development.js:11905:29)
+    at commitHookPassiveMountEffects (react-dom-client.development.js:12026:11)
+    at reconnectPassiveEffects (react-dom-client.development.js:14004:11)
+    at recursivelyTraverseReconnectPassiveEffects (react-dom-client.development.js:13976:9)
+    at reconnectPassiveEffects (react-dom-client.development.js:14051:11)
+overrideMethod @ hook.js:608
+(anônimo) @ FlashcardSection.tsx:97
+await in (anônimo)
+(anônimo) @ FlashcardSection.tsx:120
+react-stack-bottom-frame @ react-dom-client.development.js:23949
+runWithFiberInDEV @ react-dom-client.development.js:1519
+commitHookEffectListMount @ react-dom-client.development.js:11905
+commitHookPassiveMountEffects @ react-dom-client.development.js:12026
+reconnectPassiveEffects @ react-dom-client.development.js:14004
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:13976
+reconnectPassiveEffects @ react-dom-client.development.js:14051
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:13976
+reconnectPassiveEffects @ react-dom-client.development.js:13997
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:13976
+reconnectPassiveEffects @ react-dom-client.development.js:14051
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:13976
+reconnectPassiveEffects @ react-dom-client.development.js:13997
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:13976
+reconnectPassiveEffects @ react-dom-client.development.js:13997
+doubleInvokeEffectsOnFiber @ react-dom-client.development.js:15968
+runWithFiberInDEV @ react-dom-client.development.js:1519
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15928
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15935
+commitDoubleInvokeEffectsInDEV @ react-dom-client.development.js:15977
+flushPassiveEffects @ react-dom-client.development.js:15747
+flushPendingEffects @ react-dom-client.development.js:15702
+flushSpawnedWork @ react-dom-client.development.js:15668
+commitRoot @ react-dom-client.development.js:15403
+commitRootWhenReady @ react-dom-client.development.js:14652
+performWorkOnRoot @ react-dom-client.development.js:14575
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<FlashcardSection>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppContent @ App.tsx:223
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<AppContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:31
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anônimo) @ index.tsx:14
+ScriptLibrarySection.tsx:207  Uncaught ReferenceError: AnimatePresence is not defined
+    at ScriptLibrarySection (ScriptLibrarySection.tsx:207:10)
+    at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
+    at renderWithHooks (react-dom-client.development.js:5529:22)
+    at updateFunctionComponent (react-dom-client.development.js:8897:19)
+    at beginWork (react-dom-client.development.js:10522:18)
+    at runWithFiberInDEV (react-dom-client.development.js:1519:30)
+    at performUnitOfWork (react-dom-client.development.js:15132:22)
+    at workLoopSync (react-dom-client.development.js:14956:41)
+    at renderRootSync (react-dom-client.development.js:14936:11)
+    at performWorkOnRoot (react-dom-client.development.js:14462:44)
+ScriptLibrarySection @ ScriptLibrarySection.tsx:207
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14462
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<ScriptLibrarySection>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppContent @ App.tsx:255
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14462
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<AppContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:31
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anônimo) @ index.tsx:14
+App.tsx:255  An error occurred in the <ScriptLibrarySection> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+overrideMethod @ hook.js:608
+defaultOnUncaughtError @ react-dom-client.development.js:8283
+logUncaughtError @ react-dom-client.development.js:8352
+runWithFiberInDEV @ react-dom-client.development.js:1519
+lane.callback @ react-dom-client.development.js:8382
+callCallback @ react-dom-client.development.js:5363
+commitCallbacks @ react-dom-client.development.js:5383
+runWithFiberInDEV @ react-dom-client.development.js:1522
+commitLayoutEffectOnFiber @ react-dom-client.development.js:12709
+flushLayoutEffects @ react-dom-client.development.js:15559
+commitRoot @ react-dom-client.development.js:15402
+commitRootWhenReady @ react-dom-client.development.js:14652
+performWorkOnRoot @ react-dom-client.development.js:14575
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<ScriptLibrarySection>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppContent @ App.tsx:255
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14462
+performSyncWorkOnRoot @ react-dom-client.development.js:16231
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
+processRootScheduleInMicrotask @ react-dom-client.development.js:16116
+(anônimo) @ react-dom-client.development.js:16250
+<AppContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:31
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooksAgain @ react-dom-client.development.js:5629
+renderWithHooks @ react-dom-client.development.js:5541
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anônimo) @ index.tsx:14
+
+ignore erros de api, como supabase e gemini.
