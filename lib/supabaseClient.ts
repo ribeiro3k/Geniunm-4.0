@@ -93,3 +93,73 @@ export async function fetchFavoriteFlashcards(user_id: string): Promise<Supabase
   if (error) throw error;
   return data as SupabaseFlashcard[];
 }
+
+// Funções para CRUD de etiquetas e relacionamento scripts_etiquetas
+export async function fetchTags(user_id: string) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from('etiquetas')
+    .select('*')
+    .eq('created_by', user_id)
+    .order('nome', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function createTag({ nome, cor, created_by }: { nome: string, cor: string, created_by: string }) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from('etiquetas')
+    .insert([{ nome, cor, created_by }])
+    .select();
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function updateTag({ id, nome, cor }: { id: string, nome: string, cor: string }) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from('etiquetas')
+    .update({ nome, cor })
+    .eq('id', id)
+    .select();
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function deleteTag(id: string) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { error } = await supabase
+    .from('etiquetas')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function fetchTagsForScript(script_id: string) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { data, error } = await supabase
+    .from('scripts_etiquetas')
+    .select('etiqueta_id, etiquetas(*)')
+    .eq('script_id', script_id);
+  if (error) throw error;
+  return data?.map((row: any) => row.etiquetas);
+}
+
+export async function assignTagToScript(script_id: string, etiqueta_id: string) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { error } = await supabase
+    .from('scripts_etiquetas')
+    .insert([{ script_id, etiqueta_id }]);
+  if (error) throw error;
+}
+
+export async function removeTagFromScript(script_id: string, etiqueta_id: string) {
+  if (!supabase) throw new Error('Supabase não inicializado');
+  const { error } = await supabase
+    .from('scripts_etiquetas')
+    .delete()
+    .eq('script_id', script_id)
+    .eq('etiqueta_id', etiqueta_id);
+  if (error) throw error;
+}

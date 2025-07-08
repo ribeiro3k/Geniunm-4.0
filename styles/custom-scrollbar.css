@@ -1,0 +1,27 @@
+/* Scrollbar customizada para áreas roláveis (textarea, listas, dropdowns) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #5A5A7A #3C3C4E;
+  overflow-x: hidden;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: #3C3C4E;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #5A5A7A;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: #3C3C4E;
+}
+
+/* Ocultar scroll horizontal quando não necessário */
+.custom-scrollbar {
+  overflow-x: auto;
+} 
