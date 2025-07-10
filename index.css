@@ -3,3 +3,51 @@
 @tailwind utilities;
 
 @import './styles/custom-scrollbar.css';
+
+/* 
+  Garante que a cor de fundo seja aplicada à página inteira,
+  incluindo a área de "overscroll", respeitando a troca de tema.
+*/
+html, body {
+  background-color: var(--color-bg, #ffffff); /* Define um fallback branco */
+}
+
+/*
+  Define as variáveis de cor para o tema padrão (claro).
+  O seletor de tema (ex: [data-theme="dark"]) irá sobrescrever estas variáveis.
+*/
+:root {
+  color-scheme: light dark; /* Informa ao navegador os esquemas de cores suportados */
+  --color-bg: #F0F2F5; /* Um cinza claro suave para o fundo */
+  --color-bg-secondary: #FFFFFF;
+  --color-text-main: #1a202c; /* Um preto suave */
+  --color-text-light: #718096; /* Cinza para textos secundários */
+  --color-border: #E2E8F0;
+  --color-primary: #3B82F6; /* Azul */
+  --color-primary-hover: #2563EB;
+  --color-success: #10B981; /* Verde */
+  --color-warning: #F59E0B; /* Amarelo */
+  --color-danger: #EF4444; /* Vermelho */
+}
+
+/* Exemplo de como o tema escuro sobrescreveria as variáveis */
+[data-theme='dark'] {
+  --color-bg: #1A202C; /* Azul quase preto */
+  --color-bg-secondary: #2D3748; /* Azul acinzentado escuro */
+  --color-text-main: #F7FAFC; /* Branco suave */
+  --color-text-light: #A0AEC0; /* Cinza claro */
+  --color-border: #4A5568;
+  --color-primary: #4299E1; /* Azul mais brilhante para o modo escuro */
+  --color-primary-hover: #63B3ED;
+  --color-success: #38A169;
+  --color-warning: #D69E2E;
+  --color-danger: #E53E3E;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

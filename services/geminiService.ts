@@ -46,8 +46,13 @@ if (API_KEY) {
   console.error(API_KEY_ERROR_MESSAGE);
 }
 
-export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
+function getGeminiInstance(): GoogleGenAI {
   if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+  return ai;
+}
+
+export async function generateFlashcardFromGemini(theme: string): Promise<FlashcardContent | null> {
+  const gemini = getGeminiInstance();
 
   const model = "gemini-2.5-flash-preview-04-17";
   const prompt = `
@@ -61,7 +66,7 @@ export async function generateFlashcardFromGemini(theme: string): Promise<Flashc
   `;
 
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const response: GenerateContentResponse = await gemini.models.generateContent({
       model,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: { thinkingConfig: { thinkingBudget: 0 } },
@@ -102,7 +107,7 @@ export async function startChatSession(
   scenario: Scenario,
   displayInitialAiMessage: boolean
 ): Promise<{ chat: Chat; initialAiMessage: string }> {
-  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+  const gemini = getGeminiInstance();
 
  let systemInstructionContent = GEMINI_SIMULATOR_PROMPT_TEMPLATE; // fallback padrão
 
@@ -152,7 +157,8 @@ const prompt = systemInstructionContent
 }
 
 export async function sendChatMessage(chat: Chat | null, userMessage: string): Promise<string> {
-  if (!API_KEY || !chat) throw new Error(API_KEY_ERROR_MESSAGE);
+  getGeminiInstance(); // Ensure AI is initialized
+  if (!chat) throw new Error("Chat session not initialized.");
   try {
     const response = await chat.sendMessage({ message: userMessage });
     return response.text;
@@ -163,11 +169,11 @@ export async function sendChatMessage(chat: Chat | null, userMessage: string): P
 }
 
 export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenario | null> {
-  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+  const gemini = getGeminiInstance();
 
   const model = "gemini-2.5-flash-preview-04-17";
   try {
-    const response = await ai.models.generateContent({
+    const response = await gemini.models.generateContent({
       model,
       contents: [{ role: "user", parts: [{ text: GEMINI_PROCEDURAL_SCENARIO_GENERATION_PROMPT }] }],
       config: { temperature: 0.85, topP: 0.95, thinkingConfig: { thinkingBudget: 0 } },
@@ -199,7 +205,7 @@ export async function generateProceduralLeadScenarioFromGemini(): Promise<Scenar
 }
 
 export async function transcribeAudioWithGemini(audioBase64: string, mimeType = "audio/webm"): Promise<AudioTranscriptionResponse> {
-  if (!API_KEY || !ai) return { error: API_KEY_ERROR_MESSAGE };
+  const gemini = getGeminiInstance();
 
   const audioPart: Part = {
     inlineData: { mimeType, data: audioBase64 },
@@ -209,7 +215,7 @@ export async function transcribeAudioWithGemini(audioBase64: string, mimeType = 
   };
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
       contents: { parts: [audioPart, promptPart] },
       config: { thinkingConfig: { thinkingBudget: 0 } },
@@ -225,7 +231,7 @@ export async function transcribeAudioWithGemini(audioBase64: string, mimeType = 
 }
 
 export async function evaluateObjectionResponse(objection: string, responseText: string, context?: string): Promise<string> {
-  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+  const gemini = getGeminiInstance();
 
   const prompt = GEMINI_OBJECTION_EVALUATOR_PROMPT
     .replace("{OBJECTION_TEXT}", objection)
@@ -233,7 +239,7 @@ export async function evaluateObjectionResponse(objection: string, responseText:
     .replace("{USER_RESPONSE}", responseText);
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
@@ -245,11 +251,11 @@ export async function evaluateObjectionResponse(objection: string, responseText:
 }
 
 export async function generateCollaboratorAnalysis(userData: string, managerPrompt: string): Promise<string> {
-  if (!API_KEY || !ai) throw new Error(API_KEY_ERROR_MESSAGE);
+  const gemini = getGeminiInstance();
 
   const prompt = managerPrompt.replace("{USER_DATA_PLACEHOLDER}", userData);
   try {
-    const response = await ai.models.generateContent({
+    const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });

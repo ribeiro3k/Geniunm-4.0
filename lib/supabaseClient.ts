@@ -26,9 +26,14 @@ if (supabaseUrl && supabaseAnonKey) {
 
 export const supabase = supabaseInstance;
 
-export async function fetchFlashcardsByTheme(theme: string): Promise<SupabaseFlashcard[]> {
+function getSupabaseInstance(): SupabaseClient {
   if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  return supabase;
+}
+
+export async function fetchFlashcardsByTheme(theme: string): Promise<SupabaseFlashcard[]> {
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from(TABLE_FLASHCARDS)
     .select('*')
     .eq('theme', theme)
@@ -38,8 +43,8 @@ export async function fetchFlashcardsByTheme(theme: string): Promise<SupabaseFla
 }
 
 export async function fetchUserFlashcardProgress(user_id: string): Promise<UserFlashcardProgress[]> {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from(TABLE_FLASHCARD_PROGRESS)
     .select('*')
     .eq('user_id', user_id);
@@ -48,8 +53,8 @@ export async function fetchUserFlashcardProgress(user_id: string): Promise<UserF
 }
 
 export async function upsertUserFlashcardProgress(user_id: string, flashcard_id: string) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from(TABLE_FLASHCARD_PROGRESS)
     .upsert([
       {
@@ -64,8 +69,8 @@ export async function upsertUserFlashcardProgress(user_id: string, flashcard_id:
 }
 
 export async function setFlashcardFavorite(user_id: string, flashcard_id: string, is_favorite: boolean) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from(TABLE_FLASHCARD_PROGRESS)
     .upsert([
       { user_id, flashcard_id, is_favorite }
@@ -75,9 +80,9 @@ export async function setFlashcardFavorite(user_id: string, flashcard_id: string
 }
 
 export async function fetchFavoriteFlashcards(user_id: string): Promise<SupabaseFlashcard[]> {
-  if (!supabase) throw new Error('Supabase não inicializado');
+  const client = getSupabaseInstance();
   // Primeiro busca os IDs dos flashcards favoritos
-  const { data: progress, error: errorProgress } = await supabase
+  const { data: progress, error: errorProgress } = await client
     .from(TABLE_FLASHCARD_PROGRESS)
     .select('flashcard_id')
     .eq('user_id', user_id)
@@ -86,7 +91,7 @@ export async function fetchFavoriteFlashcards(user_id: string): Promise<Supabase
   const ids = (progress ?? []).map((p: any) => p.flashcard_id);
   if (ids.length === 0) return [];
   // Busca os flashcards por esses IDs
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from(TABLE_FLASHCARDS)
     .select('*')
     .in('id', ids);
@@ -96,8 +101,8 @@ export async function fetchFavoriteFlashcards(user_id: string): Promise<Supabase
 
 // Funções para CRUD de etiquetas e relacionamento scripts_etiquetas
 export async function fetchTags(user_id: string) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from('etiquetas')
     .select('*')
     .eq('created_by', user_id)
@@ -107,8 +112,8 @@ export async function fetchTags(user_id: string) {
 }
 
 export async function createTag({ nome, cor, created_by }: { nome: string, cor: string, created_by: string }) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from('etiquetas')
     .insert([{ nome, cor, created_by }])
     .select();
@@ -117,8 +122,8 @@ export async function createTag({ nome, cor, created_by }: { nome: string, cor: 
 }
 
 export async function updateTag({ id, nome, cor }: { id: string, nome: string, cor: string }) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from('etiquetas')
     .update({ nome, cor })
     .eq('id', id)
@@ -128,8 +133,8 @@ export async function updateTag({ id, nome, cor }: { id: string, nome: string, c
 }
 
 export async function deleteTag(id: string) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { error } = await supabase
+  const client = getSupabaseInstance();
+  const { error } = await client
     .from('etiquetas')
     .delete()
     .eq('id', id);
@@ -137,8 +142,8 @@ export async function deleteTag(id: string) {
 }
 
 export async function fetchTagsForScript(script_id: string) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { data, error } = await supabase
+  const client = getSupabaseInstance();
+  const { data, error } = await client
     .from('scripts_etiquetas')
     .select('etiqueta_id, etiquetas(*)')
     .eq('script_id', script_id);
@@ -147,16 +152,16 @@ export async function fetchTagsForScript(script_id: string) {
 }
 
 export async function assignTagToScript(script_id: string, etiqueta_id: string) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { error } = await supabase
+  const client = getSupabaseInstance();
+  const { error } = await client
     .from('scripts_etiquetas')
     .insert([{ script_id, etiqueta_id }]);
   if (error) throw error;
 }
 
 export async function removeTagFromScript(script_id: string, etiqueta_id: string) {
-  if (!supabase) throw new Error('Supabase não inicializado');
-  const { error } = await supabase
+  const client = getSupabaseInstance();
+  const { error } = await client
     .from('scripts_etiquetas')
     .delete()
     .eq('script_id', script_id)
