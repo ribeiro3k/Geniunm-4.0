@@ -12,21 +12,27 @@ export const CUSTOM_SIMULATOR_PROMPT_KEY = 'geniunmCustomSimulatorPrompt'; // Ke
 export const GLOBAL_SIMULATOR_PROMPT_ID = 'GLOBAL_SIMULATOR_PROMPT';
 
 
-export const NAV_ITEMS: NavItem[] = [
-  { href: "#/home", label: "Início", section: NavigationSection.Home, icon: "fa-home" },
-  { href: "#/flashcards", label: "Flashcards", section: NavigationSection.Flashcards, icon: "fa-layer-group" },
-  { href: "#/quiz", label: "Quiz", section: NavigationSection.Quiz, icon: "fa-question-circle" },
+export const NAV_ITEMS = [
   {
-    href: `#/simulador`,
-    label: "Simulador",
-    section: NavigationSection.Simulador,
-    icon: "fa-comments",
+    group: "Principal",
+    items: [
+      { href: "#/home", label: "Início", section: NavigationSection.Home, icon: "fa-home" },
+      { href: "#/flashcards", label: "Flashcards", section: NavigationSection.Flashcards, icon: "fa-layer-group" },
+      { href: "#/quiz", label: "Quiz", section: NavigationSection.Quiz, icon: "fa-question-circle" },
+      { href: `#/simulador`, label: "Simulador", section: NavigationSection.Simulador, icon: "fa-comments" },
+      { href: "#/scripts", label: "Scripts", section: NavigationSection.Scripts, icon: "fa-file-alt" },
+    ]
   },
-  { href: "#/scripts", label: "Scripts", section: NavigationSection.Scripts, icon: "fa-file-alt" },
-  { href: "#/admin-panel", label: "Painel Admin", section: NavigationSection.AdminPanel, adminOnly: true, icon: "fa-tachometer-alt" },
-  { href: "#/user-management", label: "Gerenciar Usuários", section: NavigationSection.UserManagement, adminOnly: true, icon: "fa-users-cog" },
-  { href: "#/reports", label: "Relatórios", section: NavigationSection.Reports, adminOnly: true, icon: "fa-chart-pie" },
-  { href: "#/persona-customization", label: "Customizar IA", section: NavigationSection.PersonaCustomization, adminOnly: true, icon: "fa-brain" },
+  {
+    group: "Administração",
+    adminOnly: true,
+    items: [
+      { href: "#/admin-panel", label: "Painel Admin", section: NavigationSection.AdminPanel, icon: "fa-tachometer-alt" },
+      { href: "#/user-management", label: "Gerenciar Usuários", section: NavigationSection.UserManagement, icon: "fa-users-cog" },
+      { href: "#/reports", label: "Relatórios", section: NavigationSection.Reports, icon: "fa-chart-pie" },
+      { href: "#/persona-customization", label: "Customizar IA", section: NavigationSection.PersonaCustomization, icon: "fa-brain" },
+    ]
+  }
 ];
 
 export const FLASHCARD_THEMES: string[] = [
